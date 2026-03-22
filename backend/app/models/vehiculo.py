@@ -1,0 +1,27 @@
+import uuid
+from sqlalchemy import Column, String, Integer, Boolean, ForeignKey
+from sqlalchemy.orm import relationship
+
+from app.core.database import Base
+from app.models.audit import AuditMixin
+
+
+def generate_uuid_hex():
+    return uuid.uuid4().hex
+
+
+class Vehiculo(Base, AuditMixin):
+    """Vehículo con placa, capacidad, conductor y turno."""
+    __tablename__ = "vehiculo"
+
+    vehiculo_id = Column(String(32), primary_key=True, default=generate_uuid_hex)
+    placa = Column(String(20), nullable=False)
+    capacidad = Column(Integer, default=16, nullable=False)
+    conductor_id = Column(String(32), ForeignKey("conductor.conductor_id", ondelete="SET NULL"), nullable=True)
+    turno_id = Column(String(32), ForeignKey("turno.turno_id", ondelete="CASCADE"), nullable=False)
+    proyecto_id = Column(String(32), ForeignKey("proyecto.proyecto_id", ondelete="CASCADE"), nullable=False)
+    activo = Column(Boolean, default=True, nullable=False)
+
+    conductor = relationship("Conductor", back_populates="vehiculos")
+    turno = relationship("Turno", back_populates="vehiculos")
+    proyecto = relationship("Proyecto", back_populates="vehiculos")
