@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api import auth, usuarios, roles, permisos, proyectos, turnos, rutas, conductores, pasajeros, vehiculos
+from app.api import auth, usuarios, roles, permisos, proyectos, turnos, rutas, conductores, pasajeros, vehiculos, horarios
 from app.core.config import settings
 
 app = FastAPI(
@@ -10,9 +10,10 @@ app = FastAPI(
     version="0.1.0",
 )
 
+_cors = [o.strip() for o in (settings.CORS_ORIGINS or "").split(",") if o.strip()]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
+    allow_origins=_cors,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -28,6 +29,7 @@ app.include_router(rutas.router, prefix="/api/rutas", tags=["rutas"])
 app.include_router(conductores.router, prefix="/api/conductores", tags=["conductores"])
 app.include_router(vehiculos.router, prefix="/api/vehiculos", tags=["vehiculos"])
 app.include_router(pasajeros.router, prefix="/api/pasajeros", tags=["pasajeros"])
+app.include_router(horarios.router, prefix="/api/horarios", tags=["horarios"])
 
 
 @app.get("/api/health")

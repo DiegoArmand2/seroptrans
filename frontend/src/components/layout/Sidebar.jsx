@@ -18,6 +18,7 @@ import {
   Car,
   Bus,
   Route,
+  FileSpreadsheet,
 } from 'lucide-react'
 import { useAuth } from '../../hooks/useAuth'
 import { usePermissions } from '../../hooks/usePermissions'
@@ -45,6 +46,7 @@ const menuItems = [
       { path: '/conductor', icon: Car, label: 'Conductor', ventana: 'conductor' },
       { path: '/vehiculo', icon: Bus, label: 'Vehículo', ventana: 'vehiculo' },
       { path: '/ruta', icon: Route, label: 'Ruta', ventana: 'ruta' },
+      { path: '/horarios', icon: FileSpreadsheet, label: 'Horarios', ventana: 'horarios' },
     ],
   },
 ]
@@ -138,7 +140,8 @@ const Sidebar = () => {
     item.id === 'datos-maestros' &&
     (hasVentana('usuarios') || hasVentana('roles') || hasVentana('permisos') ||
      hasVentana('proyecto') || hasVentana('turno') || hasVentana('ruta') || hasVentana('vehiculo') ||
-     hasVentana('conductor') || hasVentana('vehiculo') || hasVentana('pasajero'))
+     hasVentana('conductor') || hasVentana('vehiculo') || hasVentana('pasajero') ||
+     hasVentana('horarios'))
                   const visibleChildren = item.children.filter((c) => {
                     if (!c.ventana) return true
                     if (item.id === 'datos-maestros' && hasDatosMaestrosAccess) return true

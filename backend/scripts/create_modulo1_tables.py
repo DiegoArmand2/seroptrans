@@ -6,7 +6,15 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from app.core.database import engine, Base
 from app.models import (
-    Proyecto, Turno, Ruta, Conductor, ConductorRuta, ProyectoConductor, Vehiculo, Pasajero,
+    Proyecto,
+    Turno,
+    Ruta,
+    Conductor,
+    ConductorRuta,
+    ProyectoConductor,
+    Vehiculo,
+    Pasajero,
+    HorarioImportacion,
 )
 
 if __name__ == "__main__":

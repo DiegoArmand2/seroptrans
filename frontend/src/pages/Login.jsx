@@ -1,18 +1,26 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import Button from '../components/ui/Button'
 import Input from '../components/ui/Input'
+import { getErrorMessage } from '../utils/apiError'
 
 const Login = () => {
   const [login, setLogin] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
-  const { login: authLogin } = useAuth()
+  const { login: authLogin, isAuthenticated, loading: authLoading } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
   const from = location.state?.from?.pathname || '/'
+
+  useEffect(() => {
+    if (authLoading) return
+    if (isAuthenticated) {
+      navigate(from, { replace: true })
+    }
+  }, [authLoading, isAuthenticated, from, navigate])
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -22,7 +30,7 @@ const Login = () => {
       await authLogin(login, password)
       navigate(from, { replace: true })
     } catch (err) {
-      setError(err.response?.data?.detail || 'Error al iniciar sesión')
+      setError(getErrorMessage(err))
     } finally {
       setLoading(false)
     }

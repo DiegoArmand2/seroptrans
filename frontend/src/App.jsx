@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider } from './hooks/useAuth'
 import ProtectedRoute from './components/ProtectedRoute'
@@ -12,7 +13,16 @@ import Turno from './pages/Turno'
 import Pasajero from './pages/Pasajero'
 import Conductor from './pages/Conductor'
 import Vehiculo from './pages/Vehiculo'
-import Ruta from './pages/Ruta'
+import Horarios from './pages/Horarios'
+import Spinner from './components/ui/Spinner'
+
+const Ruta = lazy(() => import('./pages/Ruta'))
+
+const rutaFallback = (
+  <div className="min-h-[50vh] flex items-center justify-center bg-bg">
+    <Spinner size="lg" />
+  </div>
+)
 
 function App() {
   return (
@@ -37,7 +47,15 @@ function App() {
             <Route path="pasajero" element={<Pasajero />} />
             <Route path="conductor" element={<Conductor />} />
             <Route path="vehiculo" element={<Vehiculo />} />
-            <Route path="ruta" element={<Ruta />} />
+            <Route path="horarios" element={<Horarios />} />
+            <Route
+              path="ruta"
+              element={
+                <Suspense fallback={rutaFallback}>
+                  <Ruta />
+                </Suspense>
+              }
+            />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

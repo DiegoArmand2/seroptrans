@@ -8,17 +8,54 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    const token = localStorage.getItem('token')
-    const storedUser = localStorage.getItem('user')
-    if (token && storedUser) {
+    let cancelled = false
+
+    const init = async () => {
       try {
-        setUser(JSON.parse(storedUser))
-      } catch {
-        localStorage.removeItem('token')
-        localStorage.removeItem('user')
+        const token = localStorage.getItem('token')
+        const storedUser = localStorage.getItem('user')
+
+        if (token && storedUser) {
+          try {
+            const u = JSON.parse(storedUser)
+            if (!cancelled) setUser(u)
+          } catch {
+            localStorage.removeItem('token')
+            localStorage.removeItem('user')
+            if (!cancelled) setUser(null)
+          }
+        } else if (token && !storedUser) {
+          localStorage.removeItem('token')
+          if (!cancelled) setUser(null)
+        }
+
+        // Desbloquear la UI de inmediato (login, rutas públicas). La validación con /auth/me va después.
+        if (!cancelled) setLoading(false)
+
+        if (!token) return
+
+        try {
+          const data = await authService.me()
+          if (!cancelled) {
+            setUser(data)
+            localStorage.setItem('user', JSON.stringify(data))
+          }
+        } catch (e) {
+          if (!cancelled && e.response?.status === 401) {
+            localStorage.removeItem('token')
+            localStorage.removeItem('user')
+            setUser(null)
+          }
+        }
+      } finally {
+        if (!cancelled) setLoading(false)
       }
     }
-    setLoading(false)
+
+    init()
+    return () => {
+      cancelled = true
+    }
   }, [])
 
   const login = async (login, password) => {

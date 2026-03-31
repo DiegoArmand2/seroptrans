@@ -12,6 +12,7 @@ venv/
 # Node
 node_modules/
 dist/
+frontend/.vite-cache/
 *.local
 
 # Environment
@@ -19,6 +20,9 @@ dist/
 .env.local
 .env.*.local
 *.db
+
+# Archivos subidos (horarios)
+backend/uploads/
 
 # IDE / Tools
 .cursor/

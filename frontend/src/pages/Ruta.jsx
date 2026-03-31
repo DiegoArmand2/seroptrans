@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Plus, Pencil, Trash2 } from 'lucide-react'
+import { Plus, Pencil, Trash2, MapPinned } from 'lucide-react'
 import PageHeader from '../components/layout/PageHeader'
 import Button from '../components/ui/Button'
 import Card from '../components/ui/Card'
@@ -12,6 +12,8 @@ import { rutasService } from '../services/rutas.service'
 import { proyectosService } from '../services/proyectos.service'
 import { useProject } from '../contexts/ProjectContext'
 import { getErrorMessage } from '../utils/apiError'
+import { validateGeocercaString } from '../utils/geocerca'
+import GeocercaEditor from '../components/ruta/GeocercaEditor'
 
 const TIPOS = [
   { value: 'diurna', label: 'Diurna' },
@@ -64,6 +66,7 @@ const Ruta = () => {
 
   const openEdit = async (r) => {
     setEditing(r)
+    setModalOpen(true)
     setForm({
       proyecto_id: r.proyecto_id,
       nombre: r.nombre,
@@ -73,10 +76,18 @@ const Ruta = () => {
       tipo: r.tipo || 'diurna',
       activo: r.activo ?? true,
     })
-    setModalOpen(true)
     try {
       const { data } = await rutasService.get(r.ruta_id)
       setEditingFull(data)
+      setForm({
+        proyecto_id: data.proyecto_id,
+        nombre: data.nombre,
+        sector: data.sector || '',
+        geocerca: data.geocerca || '',
+        costo_base: data.costo_base ?? '',
+        tipo: data.tipo || 'diurna',
+        activo: data.activo ?? true,
+      })
     } catch {
       setEditingFull(r)
     }
@@ -84,8 +95,16 @@ const Ruta = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+    const geoErr = validateGeocercaString(form.geocerca)
+    if (geoErr) {
+      alert(geoErr)
+      return
+    }
     try {
       const payload = { ...form }
+      if (typeof payload.geocerca === 'string' && !payload.geocerca.trim()) {
+        payload.geocerca = ''
+      }
       if (editing) {
         delete payload.proyecto_id
         await rutasService.update(editing.ruta_id, payload)
@@ -133,6 +152,9 @@ const Ruta = () => {
                 <th className="text-left py-3 px-4 font-heading text-primary font-semibold">Proyecto</th>
                 <th className="text-left py-3 px-4 font-heading text-primary font-semibold">Nombre</th>
                 <th className="text-left py-3 px-4 font-heading text-primary font-semibold">Sector</th>
+                <th className="text-center py-3 px-4 font-heading text-primary font-semibold" title="Geocerca definida">
+                  Geo
+                </th>
                 <th className="text-left py-3 px-4 font-heading text-primary font-semibold">Tipo</th>
                 <th className="text-left py-3 px-4 font-heading text-primary font-semibold">Costo</th>
                 <th className="text-right py-3 px-4 font-heading text-primary font-semibold">Acciones</th>
@@ -141,7 +163,7 @@ const Ruta = () => {
             <tbody>
               {rutas.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="py-12 text-center text-muted">
+                  <td colSpan={7} className="py-12 text-center text-muted">
                     {selectedProyectoId ? 'No hay rutas en este proyecto' : 'No hay rutas'}
                   </td>
                 </tr>
@@ -151,6 +173,13 @@ const Ruta = () => {
                   <td className="py-3 px-4">{proyectos.find((p) => p.proyecto_id === r.proyecto_id)?.nombre || '-'}</td>
                   <td className="py-3 px-4">{r.nombre}</td>
                   <td className="py-3 px-4 text-muted">{r.sector || '—'}</td>
+                  <td className="py-3 px-4 text-center text-muted">
+                    {r.geocerca && String(r.geocerca).trim() ? (
+                      <MapPinned className="w-5 h-5 inline-block text-accent" aria-label="Tiene geocerca" />
+                    ) : (
+                      '—'
+                    )}
+                  </td>
                   <td className="py-3 px-4 capitalize">{r.tipo}</td>
                   <td className="py-3 px-4">{r.costo_base != null ? r.costo_base : '—'}</td>
                   <td className="py-3 px-4 text-right">
@@ -166,7 +195,7 @@ const Ruta = () => {
         </div>
       </Card>
 
-      <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} title={editing ? 'Editar ruta' : 'Nueva ruta'} size="lg">
+      <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} title={editing ? 'Editar ruta' : 'Nueva ruta'} size="xl">
         <form onSubmit={handleSubmit} className="space-y-4">
           <Select
             label="Proyecto"
@@ -178,7 +207,11 @@ const Ruta = () => {
           />
           <Input label="Nombre" value={form.nombre} onChange={(e) => setForm({ ...form, nombre: e.target.value })} required />
           <Input label="Sector" value={form.sector} onChange={(e) => setForm({ ...form, sector: e.target.value })} />
-          <Input label="Geocerca (JSON)" value={form.geocerca} onChange={(e) => setForm({ ...form, geocerca: e.target.value })} placeholder="GeoJSON o coordenadas" />
+          <GeocercaEditor
+            instanceKey={editing?.ruta_id ?? 'create'}
+            value={form.geocerca}
+            onChange={(g) => setForm((f) => ({ ...f, geocerca: g }))}
+          />
           <Input label="Costo base" type="number" step="0.01" value={form.costo_base} onChange={(e) => setForm({ ...form, costo_base: e.target.value })} />
           <Select label="Tipo" options={TIPOS} value={form.tipo} onChange={(e) => setForm({ ...form, tipo: e.target.value })} />
           <div className="flex items-center gap-2">

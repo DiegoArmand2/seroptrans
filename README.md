@@ -16,6 +16,18 @@ Sistema web para automatizar la gestión de transporte de personal de Aerosan, r
 
 ## Inicio rápido
 
+**Importante:** `docker-compose` solo levanta **PostgreSQL** (y opcionalmente pgAdmin). La aplicación web (**Vite + FastAPI**) hay que arrancarla con Python y Node; si no ejecutas el frontend, verás `ERR_CONNECTION_REFUSED` en el puerto 5173.
+
+### Opción A: un solo comando (recomendado)
+
+Desde la raíz del repositorio (con venv del backend ya creado y `pip install` hecho al menos una vez):
+
+```bash
+./scripts/start-dev.sh
+```
+
+Dejar esa terminal abierta. Abre http://localhost:5173/login
+
 ### 1. Base de datos
 
 ```bash
@@ -44,9 +56,24 @@ npm run dev
 
 ### 4. Acceso
 
-- **Frontend:** http://localhost:5173
+- **Frontend:** http://127.0.0.1:5173/login (si `localhost` falla, usa **127.0.0.1**)
 - **API:** http://localhost:8000
 - **Login:** admin / admin123
+
+### Si ves `ERR_CONNECTION_REFUSED` en el puerto 5173
+
+1. El frontend **no está corriendo**. Docker solo levanta la base de datos; hace falta **Vite** (o el contenedor del perfil `dev` abajo).
+2. Ejecuta `./scripts/diagnose-dev.sh` y comprueba que alguien escuche en **5173**.
+3. Arranca con `./scripts/start-dev.sh` y **no cierres** esa terminal.
+4. **Alternativa con Docker** (Vite dentro de un contenedor; sirve el puerto 5173 aunque Node falle en el host):
+
+   ```bash
+   docker-compose -f docker-compose.yml -f docker-compose.dev.yml up -d vite
+   ```
+
+   En otra terminal, API en el host: `cd backend && source venv/bin/activate && uvicorn app.main:app --reload --host 0.0.0.0 --port 8000`
+
+   Luego abre http://127.0.0.1:5173/login
 
 ## Estructura del proyecto
 
