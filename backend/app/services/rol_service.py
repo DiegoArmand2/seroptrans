@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 
 from app.models.rol import Rol, RolUsuario, RolPermisoVentana, RolPermisoProceso, RolPermisoProyecto
 from app.schemas.rol import RolCreate, RolUpdate, RolPermisoVentanaCreate, RolPermisoProcesoCreate
+from app.services.permisos_service import normalize_proceso_key, normalize_ventana_key
 
 
 def get_rol_by_id(db: Session, rol_id: str) -> Optional[Rol]:
@@ -53,7 +54,8 @@ def get_permisos_ventana(db: Session, rol_id: str) -> List[RolPermisoVentana]:
 
 
 def add_permiso_ventana(db: Session, permiso: RolPermisoVentanaCreate, creado_por_id: Optional[str] = None) -> RolPermisoVentana:
-    db_permiso = RolPermisoVentana(rol_id=permiso.rol_id, ventana=permiso.ventana, creado_por=creado_por_id)
+    ventana = normalize_ventana_key(permiso.ventana)
+    db_permiso = RolPermisoVentana(rol_id=permiso.rol_id, ventana=ventana, creado_por=creado_por_id)
     db.add(db_permiso)
     db.commit()
     db.refresh(db_permiso)
@@ -74,7 +76,8 @@ def get_permisos_proceso(db: Session, rol_id: str) -> List[RolPermisoProceso]:
 
 
 def add_permiso_proceso(db: Session, permiso: RolPermisoProcesoCreate, creado_por_id: Optional[str] = None) -> RolPermisoProceso:
-    db_permiso = RolPermisoProceso(rol_id=permiso.rol_id, proceso=permiso.proceso, creado_por=creado_por_id)
+    proceso = normalize_proceso_key(permiso.proceso)
+    db_permiso = RolPermisoProceso(rol_id=permiso.rol_id, proceso=proceso, creado_por=creado_por_id)
     db.add(db_permiso)
     db.commit()
     db.refresh(db_permiso)

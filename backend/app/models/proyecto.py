@@ -20,6 +20,7 @@ class Proyecto(Base, AuditMixin):
     activo = Column(Boolean, default=True, nullable=False)
 
     turnos = relationship("Turno", back_populates="proyecto", cascade="all, delete-orphan")
+    tipos_pasajero = relationship("TipoPasajero", back_populates="proyecto", cascade="all, delete-orphan")
     rutas = relationship("Ruta", back_populates="proyecto", cascade="all, delete-orphan")
     pasajeros = relationship("Pasajero", back_populates="proyecto", cascade="all, delete-orphan")
     conductores = relationship(

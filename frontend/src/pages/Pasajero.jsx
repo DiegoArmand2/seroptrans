@@ -11,6 +11,7 @@ import AuditoriaSection from '../components/ui/AuditoriaSection'
 import { pasajerosService } from '../services/pasajeros.service'
 import { proyectosService } from '../services/proyectos.service'
 import { rutasService } from '../services/rutas.service'
+import { tiposPasajeroService } from '../services/tiposPasajero.service'
 import { useProject } from '../contexts/ProjectContext'
 import { getErrorMessage } from '../utils/apiError'
 
@@ -19,6 +20,7 @@ const Pasajero = () => {
   const [pasajeros, setPasajeros] = useState([])
   const [proyectos, setProyectos] = useState([])
   const [rutas, setRutas] = useState([])
+  const [tiposPasajero, setTiposPasajero] = useState([])
   const [loading, setLoading] = useState(true)
   const [modalOpen, setModalOpen] = useState(false)
   const [importModalOpen, setImportModalOpen] = useState(false)
@@ -34,9 +36,13 @@ const Pasajero = () => {
     cedula: '',
     nombre: '',
     direccion: '',
+    lat: '',
+    lng: '',
     ruta_id: '',
+    tipo_pasajero_id: '',
     horario_habitual: '',
     placa_asignada: '',
+    contrasena: '',
     activo: true,
   })
 
@@ -44,14 +50,16 @@ const Pasajero = () => {
     setLoading(true)
     try {
       const params = selectedProyectoId ? { proyecto_id: selectedProyectoId } : {}
-      const [pRes, proyRes, rRes] = await Promise.all([
+      const [pRes, proyRes, rRes, tRes] = await Promise.all([
         pasajerosService.list(params),
         proyectosService.list(),
         rutasService.list(params),
+        tiposPasajeroService.list(params),
       ])
       setPasajeros(pRes.data)
       setProyectos(proyRes.data)
       setRutas(rRes.data)
+      setTiposPasajero(tRes.data)
     } catch (err) {
       console.error(err)
     } finally {
@@ -71,9 +79,13 @@ const Pasajero = () => {
       cedula: '',
       nombre: '',
       direccion: '',
+      lat: '',
+      lng: '',
       ruta_id: '',
+      tipo_pasajero_id: '',
       horario_habitual: '',
       placa_asignada: '',
+      contrasena: '',
       activo: true,
     })
     setModalOpen(true)
@@ -86,9 +98,13 @@ const Pasajero = () => {
       cedula: p.cedula,
       nombre: p.nombre,
       direccion: p.direccion || '',
+      lat: p.lat != null && p.lat !== '' ? String(p.lat) : '',
+      lng: p.lng != null && p.lng !== '' ? String(p.lng) : '',
       ruta_id: p.ruta_id || '',
+      tipo_pasajero_id: p.tipo_pasajero_id || '',
       horario_habitual: p.horario_habitual || '',
       placa_asignada: p.placa_asignada || '',
+      contrasena: '',
       activo: p.activo ?? true,
     })
     setModalOpen(true)
@@ -100,16 +116,48 @@ const Pasajero = () => {
     }
   }
 
+  const parseCoord = (s) => {
+    const t = String(s ?? '')
+      .trim()
+      .replace(/\s/g, '')
+      .replace(/,/g, '.')
+    if (t === '') return null
+    const n = Number(t)
+    return Number.isFinite(n) ? n : null
+  }
+
+  const buildPasajeroPayload = (forCreate) => {
+    const lat = parseCoord(form.lat)
+    const lng = parseCoord(form.lng)
+    const pw = String(form.contrasena || '').trim()
+    const payload = {
+      cedula: String(form.cedula || '').trim(),
+      nombre: String(form.nombre || '').trim(),
+      direccion: String(form.direccion || '').trim() || null,
+      lat,
+      lng,
+      ruta_id: form.ruta_id || null,
+      tipo_pasajero_id: form.tipo_pasajero_id || null,
+      horario_habitual: String(form.horario_habitual || '').trim() || null,
+      placa_asignada: String(form.placa_asignada || '').trim() || null,
+      activo: Boolean(form.activo),
+    }
+    if (forCreate) {
+      payload.proyecto_id = form.proyecto_id || selectedProyectoId
+      if (pw) payload.contrasena = pw
+    } else if (pw) {
+      payload.contrasena = pw
+    }
+    return payload
+  }
+
   const handleSubmit = async (e) => {
     e.preventDefault()
     try {
-      const payload = { ...form }
-      if (!payload.ruta_id) payload.ruta_id = null
       if (editing) {
-        delete payload.proyecto_id
-        await pasajerosService.update(editing.pasajero_id, payload)
+        await pasajerosService.update(editing.pasajero_id, buildPasajeroPayload(false))
       } else {
-        await pasajerosService.create(payload)
+        await pasajerosService.create(buildPasajeroPayload(true))
       }
       setModalOpen(false)
       loadData()
@@ -154,6 +202,10 @@ const Pasajero = () => {
     ? rutas.filter((r) => r.proyecto_id === form.proyecto_id)
     : rutas
 
+  const tiposDelProyecto = form.proyecto_id
+    ? tiposPasajero.filter((t) => t.proyecto_id === form.proyecto_id)
+    : tiposPasajero
+
   if (loading) {
     return (
       <div className="flex justify-center py-12">
@@ -180,15 +232,20 @@ const Pasajero = () => {
       />
 
       <Card>
+        <p className="text-xs text-muted px-1 pb-2 sm:hidden">Deslice la tabla horizontalmente para ver todas las columnas.</p>
         <div className="overflow-x-auto">
-          <table className="w-full">
+          <table className="w-full min-w-[1100px]">
             <thead>
               <tr className="border-b border-primary/10">
                 <th className="text-left py-3 px-4 font-heading text-primary font-semibold">Proyecto</th>
                 <th className="text-left py-3 px-4 font-heading text-primary font-semibold">Cédula</th>
                 <th className="text-left py-3 px-4 font-heading text-primary font-semibold">Nombre</th>
                 <th className="text-left py-3 px-4 font-heading text-primary font-semibold">Dirección</th>
+                <th className="text-left py-3 px-4 font-heading text-primary font-semibold">Latitud</th>
+                <th className="text-left py-3 px-4 font-heading text-primary font-semibold">Longitud</th>
                 <th className="text-left py-3 px-4 font-heading text-primary font-semibold">Ruta</th>
+                <th className="text-left py-3 px-4 font-heading text-primary font-semibold">Tipo pasajero</th>
+                <th className="text-left py-3 px-4 font-heading text-primary font-semibold">Contraseña</th>
                 <th className="text-left py-3 px-4 font-heading text-primary font-semibold">Estado</th>
                 <th className="text-right py-3 px-4 font-heading text-primary font-semibold">Acciones</th>
               </tr>
@@ -196,7 +253,7 @@ const Pasajero = () => {
             <tbody>
               {pasajeros.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="py-12 text-center text-muted">
+                  <td colSpan={11} className="py-12 text-center text-muted">
                     {selectedProyectoId ? 'No hay pasajeros en este proyecto' : 'No hay pasajeros'}
                   </td>
                 </tr>
@@ -207,7 +264,16 @@ const Pasajero = () => {
                   <td className="py-3 px-4 font-mono">{p.cedula}</td>
                   <td className="py-3 px-4">{p.nombre}</td>
                   <td className="py-3 px-4 text-muted max-w-xs truncate">{p.direccion || '—'}</td>
+                  <td className="py-3 px-4 font-mono text-sm text-muted">{p.lat != null && p.lat !== '' ? String(p.lat) : '—'}</td>
+                  <td className="py-3 px-4 font-mono text-sm text-muted">{p.lng != null && p.lng !== '' ? String(p.lng) : '—'}</td>
                   <td className="py-3 px-4">{rutas.find((r) => r.ruta_id === p.ruta_id)?.nombre || '—'}</td>
+                  <td className="py-3 px-4 text-muted">
+                    {(() => {
+                      const tp = tiposPasajero.find((t) => t.tipo_pasajero_id === p.tipo_pasajero_id)
+                      return tp ? `${tp.codigo} — ${tp.nombre}` : '—'
+                    })()}
+                  </td>
+                  <td className="py-3 px-4 text-muted text-sm">{p.tiene_contrasena ? '••••••••' : '—'}</td>
                   <td className="py-3 px-4">
                     <span className={`inline-block px-2 py-0.5 rounded text-xs ${p.activo ? 'bg-emerald-100 text-emerald-800' : 'bg-muted/30 text-muted'}`}>
                       {p.activo ? 'Activo' : 'Inactivo'}
@@ -226,7 +292,7 @@ const Pasajero = () => {
         </div>
       </Card>
 
-      <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} title={editing ? 'Editar pasajero' : 'Nuevo pasajero'} size="lg">
+      <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} title={editing ? 'Editar pasajero' : 'Nuevo pasajero'} size="xl">
         <form onSubmit={handleSubmit} className="space-y-4">
           <Select
             label="Proyecto"
@@ -239,11 +305,48 @@ const Pasajero = () => {
           <Input label="Cédula" value={form.cedula} onChange={(e) => setForm({ ...form, cedula: e.target.value })} required />
           <Input label="Nombre" value={form.nombre} onChange={(e) => setForm({ ...form, nombre: e.target.value })} required />
           <Input label="Dirección" value={form.direccion} onChange={(e) => setForm({ ...form, direccion: e.target.value })} />
+          <div className="pt-2 border-t border-primary/10">
+            <p className="text-sm font-medium text-primary mb-3">Ubicación y acceso del pasajero</p>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Input
+              label="Latitud"
+              value={form.lat}
+              onChange={(e) => setForm({ ...form, lat: e.target.value })}
+              placeholder="Ej. -0.22985"
+            />
+            <Input
+              label="Longitud"
+              value={form.lng}
+              onChange={(e) => setForm({ ...form, lng: e.target.value })}
+              placeholder="Ej. -78.52495"
+            />
+          </div>
+          <Input
+            type="password"
+            label="Contraseña"
+            value={form.contrasena}
+            onChange={(e) => setForm({ ...form, contrasena: e.target.value })}
+            placeholder={editing ? 'Vacío = sin cambios' : 'Opcional'}
+            autoComplete="new-password"
+          />
+          {editing && (
+            <p className="text-xs text-muted -mt-2">
+              Si ya tiene contraseña, deje el campo vacío para conservarla; escriba una nueva solo si desea reemplazarla.
+            </p>
+          )}
           <Select
             label="Ruta asignada"
             options={rutasDelProyecto.map((r) => ({ value: r.ruta_id, label: r.nombre }))}
             value={form.ruta_id}
             onChange={(e) => setForm({ ...form, ruta_id: e.target.value })}
+            placeholder="Sin asignar"
+          />
+          <Select
+            label="Tipo de pasajero"
+            options={tiposDelProyecto.map((t) => ({ value: t.tipo_pasajero_id, label: `${t.codigo} — ${t.nombre}` }))}
+            value={form.tipo_pasajero_id}
+            onChange={(e) => setForm({ ...form, tipo_pasajero_id: e.target.value })}
             placeholder="Sin asignar"
           />
           <Input label="Horario habitual" value={form.horario_habitual} onChange={(e) => setForm({ ...form, horario_habitual: e.target.value })} />
@@ -263,7 +366,7 @@ const Pasajero = () => {
       <Modal isOpen={importModalOpen} onClose={() => setImportModalOpen(false)} title="Importar pasajeros">
         <form onSubmit={handleImport} className="space-y-4">
           <p className="text-sm text-muted">
-            Columnas esperadas: cedula, nombre, direccion, ruta_id (opc), horario_habitual (opc), placa_asignada (opc)
+            Columnas: cedula, nombre, direccion (opc), lat/latitud, lng/longitud (opc), contrasena (opc), ruta_id (opc), horario_habitual (opc), placa_asignada (opc)
           </p>
           <Select
             label="Proyecto"

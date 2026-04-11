@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api import auth, usuarios, roles, permisos, proyectos, turnos, rutas, conductores, pasajeros, vehiculos, horarios
+from app.api import auth, usuarios, roles, permisos, proyectos, turnos, tipos_pasajero, rutas, conductores, pasajeros, vehiculos, horarios
 from app.core.config import settings
 
 app = FastAPI(
@@ -25,6 +25,7 @@ app.include_router(roles.router, prefix="/api/roles", tags=["roles"])
 app.include_router(permisos.router, prefix="/api/permisos", tags=["permisos"])
 app.include_router(proyectos.router, prefix="/api/proyectos", tags=["proyectos"])
 app.include_router(turnos.router, prefix="/api/turnos", tags=["turnos"])
+app.include_router(tipos_pasajero.router, prefix="/api/tipos-pasajero", tags=["tipos-pasajero"])
 app.include_router(rutas.router, prefix="/api/rutas", tags=["rutas"])
 app.include_router(conductores.router, prefix="/api/conductores", tags=["conductores"])
 app.include_router(vehiculos.router, prefix="/api/vehiculos", tags=["vehiculos"])

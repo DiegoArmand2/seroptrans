@@ -13,6 +13,8 @@ def get_proyecto_by_id(db: Session, proyecto_id: str) -> Optional[Proyecto]:
 def get_proyectos(db: Session, proyecto_ids: Optional[List[str]] = None, skip: int = 0, limit: int = 100) -> List[Proyecto]:
     q = db.query(Proyecto)
     if proyecto_ids is not None:
+        if not proyecto_ids:
+            return []
         q = q.filter(Proyecto.proyecto_id.in_(proyecto_ids))
     return q.offset(skip).limit(limit).all()
 

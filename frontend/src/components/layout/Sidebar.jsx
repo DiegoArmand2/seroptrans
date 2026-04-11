@@ -15,6 +15,7 @@ import {
   Building2,
   Clock,
   UserCircle,
+  Tags,
   Car,
   Bus,
   Route,
@@ -42,6 +43,7 @@ const menuItems = [
     children: [
       { path: '/proyecto', icon: Building2, label: 'Proyecto', ventana: 'proyecto' },
       { path: '/turno', icon: Clock, label: 'Turno', ventana: 'turno' },
+      { path: '/tipo-pasajero', icon: Tags, label: 'Tipo de pasajero', ventana: 'tipo_pasajero' },
       { path: '/pasajero', icon: UserCircle, label: 'Pasajero', ventana: 'pasajero' },
       { path: '/conductor', icon: Car, label: 'Conductor', ventana: 'conductor' },
       { path: '/vehiculo', icon: Bus, label: 'Vehículo', ventana: 'vehiculo' },
@@ -136,15 +138,8 @@ const Sidebar = () => {
                   )
                 }
                 if (item.children !== undefined) {
-  const hasDatosMaestrosAccess =
-    item.id === 'datos-maestros' &&
-    (hasVentana('usuarios') || hasVentana('roles') || hasVentana('permisos') ||
-     hasVentana('proyecto') || hasVentana('turno') || hasVentana('ruta') || hasVentana('vehiculo') ||
-     hasVentana('conductor') || hasVentana('vehiculo') || hasVentana('pasajero') ||
-     hasVentana('horarios'))
                   const visibleChildren = item.children.filter((c) => {
                     if (!c.ventana) return true
-                    if (item.id === 'datos-maestros' && hasDatosMaestrosAccess) return true
                     return hasVentana(c.ventana)
                   })
                   const expanded =

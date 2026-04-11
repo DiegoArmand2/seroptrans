@@ -227,6 +227,13 @@ const Horarios = () => {
               </p>
             </div>
           </div>
+          <p className="text-xs text-muted">
+            El botón Importar archivo envía al webhook de n8n el JSON{' '}
+            <code className="text-primary/80 text-[11px]">
+              {`{ "id_proyecto": "<uuid>", "url": "<ubicación del archivo>" }`}
+            </code>{' '}
+            (proyecto seleccionado y campo URL).
+          </p>
           <Button
             type="submit"
             variant="accent"

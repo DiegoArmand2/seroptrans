@@ -19,6 +19,8 @@ from app.schemas.rol import (
     RolPermisoProyectoAdd,
     RolPermisoProyectoResponse,
 )
+from app.constants.rbac_catalog import PROCESOS_PERMITIDOS, VENTANAS_PERMITIDAS
+from app.services.permisos_service import normalize_proceso_key, normalize_ventana_key
 from app.services.rol_service import (
     get_roles,
     get_rol_by_id,
@@ -127,7 +129,13 @@ def agregar_permiso_ventana(
 ):
     if not get_rol_by_id(db, rol_id):
         raise HTTPException(status_code=404, detail="Rol no encontrado")
-    permiso = RolPermisoVentanaCreate(rol_id=rol_id, ventana=body.ventana)
+    ventana_key = normalize_ventana_key(body.ventana)
+    if ventana_key not in VENTANAS_PERMITIDAS:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Ventana no válida. Valores permitidos: {', '.join(sorted(VENTANAS_PERMITIDAS))}",
+        )
+    permiso = RolPermisoVentanaCreate(rol_id=rol_id, ventana=ventana_key)
     return add_permiso_ventana(db, permiso, creado_por_id=current_user.usuario_id)
 
 
@@ -164,7 +172,13 @@ def agregar_permiso_proceso(
 ):
     if not get_rol_by_id(db, rol_id):
         raise HTTPException(status_code=404, detail="Rol no encontrado")
-    permiso = RolPermisoProcesoCreate(rol_id=rol_id, proceso=body.proceso)
+    proceso_key = normalize_proceso_key(body.proceso)
+    if proceso_key not in PROCESOS_PERMITIDOS:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Proceso no válido. Valores permitidos: {', '.join(sorted(PROCESOS_PERMITIDOS))}",
+        )
+    permiso = RolPermisoProcesoCreate(rol_id=rol_id, proceso=proceso_key)
     return add_permiso_proceso(db, permiso, creado_por_id=current_user.usuario_id)
 
 

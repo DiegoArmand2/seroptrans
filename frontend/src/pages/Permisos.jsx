@@ -4,12 +4,15 @@ import PageHeader from '../components/layout/PageHeader'
 import Button from '../components/ui/Button'
 import Card from '../components/ui/Card'
 import Modal from '../components/ui/Modal'
-import Input from '../components/ui/Input'
 import Select from '../components/ui/Select'
 import Spinner from '../components/ui/Spinner'
 import { rolesService } from '../services/roles.service'
 import { proyectosService } from '../services/proyectos.service'
 import { getErrorMessage } from '../utils/apiError'
+import { VENTANAS_PERMISO_OPTIONS } from '../constants/ventanasPermiso'
+import { PROCESOS_PERMISO_OPTIONS } from '../constants/procesosPermiso'
+
+const normKey = (s) => String(s ?? '').toLowerCase().trim()
 
 const Permisos = () => {
   const [roles, setRoles] = useState([])
@@ -63,6 +66,14 @@ const Permisos = () => {
   useEffect(() => {
     loadPermisos()
   }, [selectedRol])
+
+  const ventanasSelectOptions = VENTANAS_PERMISO_OPTIONS.filter(
+    (opt) => !ventanas.some((v) => normKey(v.ventana) === opt.value)
+  )
+
+  const procesosSelectOptions = PROCESOS_PERMISO_OPTIONS.filter(
+    (opt) => !procesos.some((p) => normKey(p.proceso) === opt.value)
+  )
 
   const addVentana = async (e) => {
     e.preventDefault()
@@ -173,7 +184,10 @@ const Permisos = () => {
               <Button
                 size="sm"
                 icon={<Plus className="w-4 h-4" />}
-                onClick={() => setModalVentana(true)}
+                onClick={() => {
+                  setNewVentana('')
+                  setModalVentana(true)
+                }}
               >
                 Agregar
               </Button>
@@ -211,7 +225,10 @@ const Permisos = () => {
               <Button
                 size="sm"
                 icon={<Plus className="w-4 h-4" />}
-                onClick={() => setModalProceso(true)}
+                onClick={() => {
+                  setNewProceso('')
+                  setModalProceso(true)
+                }}
               >
                 Agregar
               </Button>
@@ -256,6 +273,13 @@ const Permisos = () => {
                 </Button>
               )}
             </div>
+            {!isAdmin && (
+              <p className="text-muted text-sm mb-4 -mt-2">
+                Opcional para el menú Proyecto: con la ventana Proyecto basta para
+                ver y editar el catálogo de proyectos. Estas asignaciones limitan qué proyectos
+                aparecen en el selector y en turnos, pasajeros, rutas, etc.
+              </p>
+            )}
             {loading ? (
               <Spinner />
             ) : isAdmin ? (
@@ -292,22 +316,44 @@ const Permisos = () => {
 
       <Modal
         isOpen={modalVentana}
-        onClose={() => setModalVentana(false)}
+        onClose={() => {
+          setNewVentana('')
+          setModalVentana(false)
+        }}
         title="Agregar permiso de ventana"
       >
         <form onSubmit={addVentana} className="space-y-4">
-          <Input
-            label="Ventana"
-            value={newVentana}
-            onChange={(e) => setNewVentana(e.target.value)}
-            placeholder="Ej: dashboard, usuarios"
-            required
-          />
+          {ventanasSelectOptions.length === 0 ? (
+            <p className="text-muted text-sm">
+              Este rol ya tiene asignadas todas las ventanas disponibles en el sistema.
+            </p>
+          ) : (
+            <div>
+              <Select
+                label="Ventana"
+                options={ventanasSelectOptions}
+                value={newVentana}
+                onChange={(e) => setNewVentana(e.target.value)}
+                placeholder="— Elija una ventana de la lista —"
+                required
+              />
+              <p className="mt-2 text-xs text-muted">
+                Solo se permiten ventanas definidas en la aplicación (no texto libre).
+              </p>
+            </div>
+          )}
           <div className="flex justify-end gap-2 pt-4">
-            <Button type="button" variant="outline" onClick={() => setModalVentana(false)}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setNewVentana('')
+                setModalVentana(false)
+              }}
+            >
               Cancelar
             </Button>
-            <Button type="submit" variant="accent">
+            <Button type="submit" variant="accent" disabled={ventanasSelectOptions.length === 0}>
               Agregar
             </Button>
           </div>
@@ -316,22 +362,44 @@ const Permisos = () => {
 
       <Modal
         isOpen={modalProceso}
-        onClose={() => setModalProceso(false)}
+        onClose={() => {
+          setNewProceso('')
+          setModalProceso(false)
+        }}
         title="Agregar permiso de proceso"
       >
         <form onSubmit={addProceso} className="space-y-4">
-          <Input
-            label="Proceso"
-            value={newProceso}
-            onChange={(e) => setNewProceso(e.target.value)}
-            placeholder="Ej: crear, editar, eliminar"
-            required
-          />
+          {procesosSelectOptions.length === 0 ? (
+            <p className="text-muted text-sm">
+              Este rol ya tiene asignados todos los procesos disponibles en el sistema.
+            </p>
+          ) : (
+            <div>
+              <Select
+                label="Proceso"
+                options={procesosSelectOptions}
+                value={newProceso}
+                onChange={(e) => setNewProceso(e.target.value)}
+                placeholder="— Elija un proceso de la lista —"
+                required
+              />
+              <p className="mt-2 text-xs text-muted">
+                Solo se permiten procesos definidos en la aplicación (no texto libre).
+              </p>
+            </div>
+          )}
           <div className="flex justify-end gap-2 pt-4">
-            <Button type="button" variant="outline" onClick={() => setModalProceso(false)}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setNewProceso('')
+                setModalProceso(false)
+              }}
+            >
               Cancelar
             </Button>
-            <Button type="submit" variant="accent">
+            <Button type="submit" variant="accent" disabled={procesosSelectOptions.length === 0}>
               Agregar
             </Button>
           </div>

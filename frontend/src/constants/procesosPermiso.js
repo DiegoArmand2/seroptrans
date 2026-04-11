@@ -1,0 +1,10 @@
+/**
+ * Procesos RBAC válidos (alineado con seed_admin y hasProceso en frontend).
+ * value en minúsculas; el backend normaliza al guardar.
+ */
+export const PROCESOS_PERMISO_OPTIONS = [
+  { value: 'crear', label: 'Crear' },
+  { value: 'editar', label: 'Editar' },
+  { value: 'eliminar', label: 'Eliminar' },
+  { value: 'asignar', label: 'Asignar' },
+]

@@ -1,0 +1,3 @@
+cedula,nombre,direccion,lat,lng,contrasena,ruta_id,horario_habitual,placa_asignada
+1712345678,Ejemplo Juan Pérez,Av. Principal 123,-0.2298500,-78.5249500,,,07:00-08:00,ABC1234
+1715187322,Diego Armando,,-0.271293,-78.466102,1234567,,,

@@ -1,6 +1,9 @@
 from pydantic_settings import BaseSettings
 from functools import lru_cache
 
+# Webhook por defecto (importación horarios → n8n). Sobrescribible con N8N_HORARIOS_WEBHOOK_URL.
+DEFAULT_N8N_HORARIOS_WEBHOOK_URL = "https://n8nadm.admagentes.online/webhook/st_horarios"
+
 
 class Settings(BaseSettings):
     DATABASE_URL: str = "sqlite:///./seroptrans.db"

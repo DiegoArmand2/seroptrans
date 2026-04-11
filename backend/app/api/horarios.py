@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile
 from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 
-from app.core.config import settings
+from app.core.config import settings, DEFAULT_N8N_HORARIOS_WEBHOOK_URL
 from app.core.database import get_db
 from app.core.security import get_current_user_required
 from app.models.usuario import Usuario
@@ -82,12 +82,7 @@ def importar_horarios(
     if not can_access_proyecto(db, current_user.usuario_id, body.proyecto_id):
         raise HTTPException(status_code=404, detail="Proyecto no encontrado")
 
-    webhook = (settings.N8N_HORARIOS_WEBHOOK_URL or "").strip()
-    if not webhook:
-        raise HTTPException(
-            status_code=503,
-            detail="Integración de horarios no configurada (N8N_HORARIOS_WEBHOOK_URL).",
-        )
+    webhook = (settings.N8N_HORARIOS_WEBHOOK_URL or "").strip() or DEFAULT_N8N_HORARIOS_WEBHOOK_URL
 
     n8n_body, transport_err = call_n8n_horarios_webhook(webhook, body.proyecto_id, body.url)
 

@@ -10,8 +10,7 @@ export const pasajerosService = {
     const formData = new FormData()
     formData.append('proyecto_id', proyectoId)
     formData.append('file', file)
-    return api.post('/pasajeros/importar', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    })
+    // No fijar Content-Type: el navegador debe añadir boundary; forzarlo rompe el multipart y puede afectar Axios.
+    return api.post('/pasajeros/importar', formData)
   },
 }

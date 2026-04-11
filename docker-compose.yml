@@ -4,6 +4,7 @@ services:
   db:
     image: postgres:16-alpine
     container_name: seroptrans_db
+    restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
@@ -23,6 +24,7 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     container_name: seroptrans_api
+    restart: unless-stopped
     depends_on:
       - db
     environment:
@@ -37,20 +39,34 @@ services:
       ACCESS_TOKEN_EXPIRE_MINUTES: ${ACCESS_TOKEN_EXPIRE_MINUTES}
       CORS_ORIGINS: ${CORS_ORIGINS}
       PUBLIC_BASE_URL: ${PUBLIC_BASE_URL}
-      N8N_HORARIOS_WEBHOOK_URL: ${N8N_HORARIOS_WEBHOOK_URL}
+      # Valor por defecto si .env no define la variable (evita 503 por webhook vacío)
+      N8N_HORARIOS_WEBHOOK_URL: ${N8N_HORARIOS_WEBHOOK_URL:-https://n8nadm.admagentes.online/webhook/st_horarios}
       HORARIOS_UPLOAD_DIR: /app/uploads/horarios
     ports:
-      - "8040:8000"
+      - "8000:8000"
     volumes:
       - horarios_uploads:/app/uploads/horarios
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/health', timeout=5).read()",
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 5
 
   frontend:
     build:
       context: .
       dockerfile: frontend/Dockerfile
       args:
-        VITE_API_URL: ${VITE_API_URL}
+        # Literal embebido en el build de Vite: el navegador del usuario debe poder abrir esta URL.
+        VITE_API_URL: ${VITE_API_URL:-http://localhost:8000/api}
     container_name: seroptrans_frontend
+    restart: unless-stopped
     depends_on:
       - api
     ports:

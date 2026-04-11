@@ -35,6 +35,9 @@ export function getErrorMessage(err) {
   }
 
   if (err?.code === 'ECONNABORTED') return 'La petición tardó demasiado (timeout).'
+  if (err?.code === 'ERR_CANCELED') {
+    return 'Petición cancelada (p. ej. navegación o cierre de sesión). Intente de nuevo.'
+  }
   if (err?.code === 'ERR_NETWORK' || err?.message === 'Network Error') {
     return 'No se pudo conectar con el servidor. ¿Está la API en el puerto 8000? Si el frontend corre en Docker, ¿uvicorn escucha en 0.0.0.0:8000?'
   }

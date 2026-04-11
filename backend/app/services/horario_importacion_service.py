@@ -27,6 +27,7 @@ def _normalize_n8n_payload(data: Any) -> Tuple[Optional[str], Optional[int], Opt
 
 
 def call_n8n_horarios_webhook(webhook_url: str, proyecto_id: str, file_url: str) -> Tuple[Any, Optional[str]]:
+    """POST al webhook n8n con cuerpo: {\"id_proyecto\": uuid32, \"url\": url del archivo}."""
     try:
         with httpx.Client(timeout=120.0) as client:
             r = client.post(

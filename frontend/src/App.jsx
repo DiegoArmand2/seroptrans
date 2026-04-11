@@ -10,6 +10,7 @@ import Roles from './pages/Roles'
 import Permisos from './pages/Permisos'
 import Proyecto from './pages/Proyecto'
 import Turno from './pages/Turno'
+import TipoPasajero from './pages/TipoPasajero'
 import Pasajero from './pages/Pasajero'
 import Conductor from './pages/Conductor'
 import Vehiculo from './pages/Vehiculo'
@@ -44,6 +45,7 @@ function App() {
             <Route path="permisos" element={<Permisos />} />
             <Route path="proyecto" element={<Proyecto />} />
             <Route path="turno" element={<Turno />} />
+            <Route path="tipo-pasajero" element={<TipoPasajero />} />
             <Route path="pasajero" element={<Pasajero />} />
             <Route path="conductor" element={<Conductor />} />
             <Route path="vehiculo" element={<Vehiculo />} />

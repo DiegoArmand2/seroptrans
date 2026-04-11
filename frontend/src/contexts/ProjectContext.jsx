@@ -1,30 +1,49 @@
 import { createContext, useContext, useState, useEffect } from 'react'
 import { proyectosService } from '../services/proyectos.service'
+import { useAuth } from '../hooks/useAuth'
 
 const ProjectContext = createContext(null)
 
 export const ProjectProvider = ({ children }) => {
+  const { user } = useAuth()
   const [proyectos, setProyectos] = useState([])
   const [selectedProyectoId, setSelectedProyectoId] = useState(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    const uid = user?.usuario_id
+    if (!uid) {
+      setProyectos([])
+      setSelectedProyectoId(null)
+      setLoading(false)
+      return
+    }
+
+    let cancelled = false
+
     const load = async () => {
+      setLoading(true)
       try {
         const { data } = await proyectosService.list()
-        setProyectos(data || [])
+        if (cancelled) return
+        const list = data || []
+        setProyectos(list)
         setSelectedProyectoId((prev) => {
-          if (prev && !data?.some((p) => p.proyecto_id === prev)) return null
+          if (prev && !list.some((p) => p.proyecto_id === prev)) return null
           return prev
         })
       } catch {
-        setProyectos([])
+        if (!cancelled) setProyectos([])
       } finally {
-        setLoading(false)
+        if (!cancelled) setLoading(false)
       }
     }
+
     load()
-  }, [])
+    return () => {
+      cancelled = true
+    }
+  }, [user?.usuario_id])
 
   const value = {
     proyectos,

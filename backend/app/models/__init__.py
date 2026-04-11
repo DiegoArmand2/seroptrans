@@ -6,10 +6,11 @@ from app.models.ruta import Ruta
 from app.models.conductor import Conductor, ConductorRuta, ProyectoConductor
 from app.models.vehiculo import Vehiculo
 from app.models.pasajero import Pasajero
+from app.models.tipo_pasajero import TipoPasajero
 from app.models.horario_importacion import HorarioImportacion
 
 __all__ = [
     "Usuario", "Rol", "RolUsuario", "RolPermisoVentana", "RolPermisoProceso", "RolPermisoProyecto",
-    "Proyecto", "Turno", "Ruta", "Conductor", "ConductorRuta", "ProyectoConductor", "Vehiculo", "Pasajero",
+    "Proyecto", "Turno", "TipoPasajero", "Ruta", "Conductor", "ConductorRuta", "ProyectoConductor", "Vehiculo", "Pasajero",
     "HorarioImportacion",
 ]

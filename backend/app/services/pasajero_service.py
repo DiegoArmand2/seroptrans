@@ -2,6 +2,7 @@ from typing import List, Optional
 
 from sqlalchemy.orm import Session
 
+from app.core.security import get_password_hash
 from app.models.pasajero import Pasajero
 from app.schemas.pasajero import PasajeroCreate, PasajeroUpdate
 
@@ -28,6 +29,7 @@ def get_pasajeros(
 
 
 def create_pasajero(db: Session, pasajero: PasajeroCreate, creado_por_id: Optional[str] = None) -> Pasajero:
+    plain_pw = (pasajero.contrasena or "").strip()
     db_pasajero = Pasajero(
         proyecto_id=pasajero.proyecto_id,
         cedula=pasajero.cedula,
@@ -36,8 +38,10 @@ def create_pasajero(db: Session, pasajero: PasajeroCreate, creado_por_id: Option
         lat=pasajero.lat,
         lng=pasajero.lng,
         ruta_id=pasajero.ruta_id,
+        tipo_pasajero_id=pasajero.tipo_pasajero_id,
         horario_habitual=pasajero.horario_habitual,
         placa_asignada=pasajero.placa_asignada,
+        password_hash=get_password_hash(plain_pw) if plain_pw else None,
         activo=pasajero.activo,
         creado_por=creado_por_id,
     )
@@ -52,6 +56,11 @@ def update_pasajero(db: Session, pasajero_id: str, pasajero_update: PasajeroUpda
     if not db_pasajero:
         return None
     data = pasajero_update.model_dump(exclude_unset=True)
+    if "contrasena" in data:
+        raw = data.pop("contrasena")
+        plain = (raw or "").strip() if raw is not None else ""
+        if plain:
+            db_pasajero.password_hash = get_password_hash(plain)
     for key, value in data.items():
         setattr(db_pasajero, key, value)
     if actualizado_por_id is not None:

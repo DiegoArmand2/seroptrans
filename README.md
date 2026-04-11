@@ -18,6 +18,11 @@ Sistema web para automatizar la gestión de transporte de personal de Aerosan, r
 
 **Importante:** `docker-compose` solo levanta **PostgreSQL** (y opcionalmente pgAdmin). La aplicación web (**Vite + FastAPI**) hay que arrancarla con Python y Node; si no ejecutas el frontend, verás `ERR_CONNECTION_REFUSED` en el puerto 5173.
 
+### Conexión a la base de datos (PostgreSQL)
+
+- **Dentro de Docker (backend → db):** `postgresql://seroptrans:<POSTGRES_PASSWORD>@db:5432/seroptrans`
+- **Desde el host/servidor (puerto publicado en compose):** `postgresql://seroptrans:<POSTGRES_PASSWORD>@127.0.0.1:5433/seroptrans`
+
 ### Opción A: un solo comando (recomendado)
 
 Desde la raíz del repositorio (con venv del backend ya creado y `pip install` hecho al menos una vez):

@@ -14,7 +14,7 @@ from app.services.proyecto_service import (
     update_proyecto,
     delete_proyecto,
 )
-from app.services.permisos_service import get_user_proyectos, can_access_proyecto
+from app.services.permisos_service import get_proyecto_ids_for_catalog, can_access_proyecto_catalog
 
 router = APIRouter()
 
@@ -37,7 +37,7 @@ def list_proyectos(
     db: Session = Depends(get_db),
     current_user: Usuario = Depends(get_current_user_required),
 ):
-    proyecto_ids = get_user_proyectos(db, current_user.usuario_id)
+    proyecto_ids = get_proyecto_ids_for_catalog(db, current_user.usuario_id)
     return [_to_response(db, p) for p in get_proyectos(db, proyecto_ids=proyecto_ids, skip=skip, limit=limit)]
 
 
@@ -60,7 +60,7 @@ def obtener_proyecto(
     p = get_proyecto_by_id(db, proyecto_id)
     if not p:
         raise HTTPException(status_code=404, detail="Proyecto no encontrado")
-    if not can_access_proyecto(db, current_user.usuario_id, proyecto_id):
+    if not can_access_proyecto_catalog(db, current_user.usuario_id, proyecto_id):
         raise HTTPException(status_code=404, detail="Proyecto no encontrado")
     return _to_response(db, p)
 
@@ -72,7 +72,7 @@ def actualizar_proyecto(
     db: Session = Depends(get_db),
     current_user: Usuario = Depends(get_current_user_required),
 ):
-    if not can_access_proyecto(db, current_user.usuario_id, proyecto_id):
+    if not can_access_proyecto_catalog(db, current_user.usuario_id, proyecto_id):
         raise HTTPException(status_code=404, detail="Proyecto no encontrado")
     updated = update_proyecto(db, proyecto_id, proyecto, actualizado_por_id=current_user.usuario_id)
     if not updated:
@@ -86,7 +86,7 @@ def eliminar_proyecto(
     db: Session = Depends(get_db),
     current_user: Usuario = Depends(get_current_user_required),
 ):
-    if not can_access_proyecto(db, current_user.usuario_id, proyecto_id):
+    if not can_access_proyecto_catalog(db, current_user.usuario_id, proyecto_id):
         raise HTTPException(status_code=404, detail="Proyecto no encontrado")
     if not delete_proyecto(db, proyecto_id):
         raise HTTPException(status_code=404, detail="Proyecto no encontrado")
