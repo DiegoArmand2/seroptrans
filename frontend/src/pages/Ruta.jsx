@@ -195,28 +195,34 @@ const Ruta = () => {
         </div>
       </Card>
 
-      <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} title={editing ? 'Editar ruta' : 'Nueva ruta'} size="xl">
+      <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} title={editing ? 'Editar ruta' : 'Nueva ruta'} size="3xl">
         <form onSubmit={handleSubmit} className="space-y-4">
-          <Select
-            label="Proyecto"
-            options={proyectos.map((p) => ({ value: p.proyecto_id, label: p.nombre }))}
-            value={form.proyecto_id || selectedProyectoId}
-            onChange={(e) => setForm({ ...form, proyecto_id: e.target.value })}
-            disabled={!!editing || !!selectedProyectoId}
-            required
-          />
-          <Input label="Nombre" value={form.nombre} onChange={(e) => setForm({ ...form, nombre: e.target.value })} required />
-          <Input label="Sector" value={form.sector} onChange={(e) => setForm({ ...form, sector: e.target.value })} />
-          <GeocercaEditor
-            instanceKey={editing?.ruta_id ?? 'create'}
-            value={form.geocerca}
-            onChange={(g) => setForm((f) => ({ ...f, geocerca: g }))}
-          />
-          <Input label="Costo base" type="number" step="0.01" value={form.costo_base} onChange={(e) => setForm({ ...form, costo_base: e.target.value })} />
-          <Select label="Tipo" options={TIPOS} value={form.tipo} onChange={(e) => setForm({ ...form, tipo: e.target.value })} />
-          <div className="flex items-center gap-2">
-            <input type="checkbox" id="activo" checked={form.activo} onChange={(e) => setForm({ ...form, activo: e.target.checked })} className="rounded w-4 h-4 accent-primary" />
-            <label htmlFor="activo" className="text-sm font-medium text-primary">Activo</label>
+          <div className="grid grid-cols-1 lg:grid-cols-[1fr_3fr] gap-6 lg:gap-8 items-start">
+            <div className="space-y-4">
+              <Select
+                label="Proyecto"
+                options={proyectos.map((p) => ({ value: p.proyecto_id, label: p.nombre }))}
+                value={form.proyecto_id || selectedProyectoId}
+                onChange={(e) => setForm({ ...form, proyecto_id: e.target.value })}
+                disabled={!!editing || !!selectedProyectoId}
+                required
+              />
+              <Input label="Nombre" value={form.nombre} onChange={(e) => setForm({ ...form, nombre: e.target.value })} required />
+              <Input label="Sector" value={form.sector} onChange={(e) => setForm({ ...form, sector: e.target.value })} />
+              <Input label="Costo base" type="number" step="0.01" value={form.costo_base} onChange={(e) => setForm({ ...form, costo_base: e.target.value })} />
+              <Select label="Tipo" options={TIPOS} value={form.tipo} onChange={(e) => setForm({ ...form, tipo: e.target.value })} />
+              <div className="flex items-center gap-2">
+                <input type="checkbox" id="activo" checked={form.activo} onChange={(e) => setForm({ ...form, activo: e.target.checked })} className="rounded w-4 h-4 accent-primary" />
+                <label htmlFor="activo" className="text-sm font-medium text-primary">Activo</label>
+              </div>
+            </div>
+            <div className="min-w-0">
+              <GeocercaEditor
+                instanceKey={editing?.ruta_id ?? 'create'}
+                value={form.geocerca}
+                onChange={(g) => setForm((f) => ({ ...f, geocerca: g }))}
+              />
+            </div>
           </div>
           <AuditoriaSection data={editingFull} />
           <div className="flex justify-end gap-2 pt-4">

@@ -11,6 +11,7 @@ import AuditoriaSection from '../components/ui/AuditoriaSection'
 import { vehiculosService } from '../services/vehiculos.service'
 import { conductoresService } from '../services/conductores.service'
 import { turnosService } from '../services/turnos.service'
+import { tiposVehiculoService } from '../services/tiposVehiculo.service'
 import { useProject } from '../contexts/ProjectContext'
 import { getErrorMessage } from '../utils/apiError'
 
@@ -19,6 +20,7 @@ const Vehiculo = () => {
   const [vehiculos, setVehiculos] = useState([])
   const [conductores, setConductores] = useState([])
   const [turnos, setTurnos] = useState([])
+  const [tiposVehiculo, setTiposVehiculo] = useState([])
   const [loading, setLoading] = useState(true)
   const [modalOpen, setModalOpen] = useState(false)
   const [editing, setEditing] = useState(null)
@@ -28,6 +30,7 @@ const Vehiculo = () => {
     capacidad: 16,
     conductor_id: '',
     turno_id: '',
+    tipo_vehiculo_id: '',
     proyecto_id: '',
     activo: true,
   })
@@ -45,12 +48,14 @@ const Vehiculo = () => {
   const loadAux = async (proyectoId) => {
     if (!proyectoId) return
     try {
-      const [cRes, tRes] = await Promise.all([
+      const [cRes, tRes, tvRes] = await Promise.all([
         conductoresService.list({ proyecto_id: proyectoId }),
         turnosService.list({ proyecto_id: proyectoId }),
+        tiposVehiculoService.list({ proyecto_id: proyectoId }),
       ])
       setConductores(cRes.data || [])
       setTurnos(tRes.data || [])
+      setTiposVehiculo(tvRes.data || [])
     } catch (err) {
       console.error(err)
     }
@@ -81,6 +86,7 @@ const Vehiculo = () => {
       capacidad: 16,
       conductor_id: '',
       turno_id: '',
+      tipo_vehiculo_id: '',
       proyecto_id: selectedProyectoId || '',
       activo: true,
     })
@@ -94,6 +100,7 @@ const Vehiculo = () => {
       capacidad: v.capacidad ?? 16,
       conductor_id: v.conductor_id || '',
       turno_id: v.turno_id || '',
+      tipo_vehiculo_id: v.tipo_vehiculo_id || '',
       proyecto_id: v.proyecto_id || selectedProyectoId || '',
       activo: v.activo ?? true,
     })
@@ -119,6 +126,7 @@ const Vehiculo = () => {
         capacidad: form.capacidad,
         conductor_id: form.conductor_id || null,
         turno_id: form.turno_id,
+        tipo_vehiculo_id: form.tipo_vehiculo_id || null,
         proyecto_id: proyectoId,
         activo: form.activo ?? true,
       }
@@ -146,6 +154,10 @@ const Vehiculo = () => {
 
   const conductorOptions = conductores.map((c) => ({ value: c.conductor_id, label: c.nombre }))
   const turnoOptions = turnos.map((t) => ({ value: t.turno_id, label: t.nombre }))
+  const tipoVehiculoOptions = tiposVehiculo.map((tv) => ({
+    value: tv.tipo_vehiculo_id,
+    label: `${tv.identificador} — ${tv.nombre}`,
+  }))
   const proyectoOptions = proyectos.map((p) => ({ value: p.proyecto_id, label: p.nombre }))
 
   if (loading) {
@@ -162,7 +174,7 @@ const Vehiculo = () => {
         title="Vehículo"
         description={
           selectedProyectoId
-            ? 'Gestión de vehículos con placa, capacidad, conductor y turno'
+            ? 'Gestión de vehículos con placa, capacidad, tipo, conductor y turno'
             : 'Mostrando todos los vehículos. Al crear, seleccione el proyecto en el formulario.'
         }
         children={
@@ -182,6 +194,7 @@ const Vehiculo = () => {
                 <th className="text-left py-3 px-4 font-heading text-primary font-semibold">Capacidad</th>
                 <th className="text-left py-3 px-4 font-heading text-primary font-semibold">Conductor</th>
                 <th className="text-left py-3 px-4 font-heading text-primary font-semibold">Turno</th>
+                <th className="text-left py-3 px-4 font-heading text-primary font-semibold">Tipo de vehículo</th>
                 <th className="text-left py-3 px-4 font-heading text-primary font-semibold">Estado</th>
                 <th className="text-right py-3 px-4 font-heading text-primary font-semibold">Acciones</th>
               </tr>
@@ -189,7 +202,7 @@ const Vehiculo = () => {
             <tbody>
               {vehiculos.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="py-12 text-center text-muted">
+                  <td colSpan={8} className="py-12 text-center text-muted">
                     {selectedProyectoId ? 'No hay vehículos en este proyecto' : 'No hay vehículos. Haga clic en Nuevo vehículo para crear uno.'}
                   </td>
                 </tr>
@@ -201,6 +214,7 @@ const Vehiculo = () => {
                   <td className="py-3 px-4">{v.capacidad}</td>
                   <td className="py-3 px-4">{v.conductor_nombre || '—'}</td>
                   <td className="py-3 px-4">{v.turno_nombre || '—'}</td>
+                  <td className="py-3 px-4 text-muted">{v.tipo_vehiculo_nombre || '—'}</td>
                   <td className="py-3 px-4">
                     <span
                       className={`px-2 py-0.5 rounded text-xs ${
@@ -239,7 +253,9 @@ const Vehiculo = () => {
             label="Proyecto"
             options={proyectoOptions}
             value={form.proyecto_id || selectedProyectoId}
-            onChange={(e) => setForm({ ...form, proyecto_id: e.target.value, turno_id: '', conductor_id: '' })}
+            onChange={(e) =>
+              setForm({ ...form, proyecto_id: e.target.value, turno_id: '', conductor_id: '', tipo_vehiculo_id: '' })
+            }
             placeholder="Seleccionar proyecto"
             disabled={!!editing || !!selectedProyectoId}
             required
@@ -271,6 +287,13 @@ const Vehiculo = () => {
             onChange={(e) => setForm({ ...form, turno_id: e.target.value })}
             placeholder="Seleccionar turno"
             required
+          />
+          <Select
+            label="Tipo de vehículo"
+            options={tipoVehiculoOptions}
+            value={form.tipo_vehiculo_id}
+            onChange={(e) => setForm({ ...form, tipo_vehiculo_id: e.target.value })}
+            placeholder="Seleccionar tipo (opcional)"
           />
           <div className="flex items-center gap-2">
             <input

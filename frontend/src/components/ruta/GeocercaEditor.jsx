@@ -201,8 +201,7 @@ function GeocercaEditor({ value, onChange, instanceKey = 'default' }) {
         Dibuje un polígono o pegue un GeoJSON Feature (Polygon / MultiPolygon).
       </p>
       <div
-        className="rounded-lg border-2 border-primary/20 overflow-hidden z-0"
-        style={{ height: 300 }}
+        className="rounded-lg border-2 border-primary/20 overflow-hidden z-0 min-h-[420px] h-[min(58vh,640px)]"
       >
         <MapContainer
           key={instanceKey}

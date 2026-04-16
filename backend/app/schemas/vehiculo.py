@@ -10,6 +10,7 @@ class VehiculoBase(BaseModel):
     conductor_id: Optional[str] = None
     turno_id: str = Field(...)
     proyecto_id: str = Field(...)
+    tipo_vehiculo_id: Optional[str] = None
     activo: bool = True
 
 
@@ -22,6 +23,7 @@ class VehiculoUpdate(BaseModel):
     capacidad: Optional[int] = Field(None, ge=1, le=100)
     conductor_id: Optional[str] = None
     turno_id: Optional[str] = None
+    tipo_vehiculo_id: Optional[str] = None
     activo: Optional[bool] = None
 
 
@@ -29,6 +31,7 @@ class VehiculoResponse(VehiculoBase):
     vehiculo_id: str
     conductor_nombre: Optional[str] = None
     turno_nombre: Optional[str] = None
+    tipo_vehiculo_nombre: Optional[str] = None
     fecha_creacion: Optional[datetime] = None
     creado_por: Optional[str] = None
     creado_por_nombre: Optional[str] = None

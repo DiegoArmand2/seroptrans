@@ -1,5 +1,5 @@
 import uuid
-from sqlalchemy import Boolean, Column, String, ForeignKey
+from sqlalchemy import Boolean, Column, ForeignKey, String, Time
 from sqlalchemy.orm import relationship
 
 from app.core.database import Base
@@ -18,6 +18,11 @@ class Turno(Base, AuditMixin):
     nombre = Column(String(60), nullable=False)  # mañana, noche
     descripcion = Column(String(200), nullable=True)
     activo = Column(Boolean, default=True, nullable=False)
+    hora_entrada = Column(Time, nullable=True)
+    hora_salida = Column(Time, nullable=True)
+    tipo_turno = Column(String(20), nullable=False, default="matutino")
+    tipo_horario = Column(String(20), nullable=False, default="entrada")
+    cambio_dia = Column(Boolean, default=False, nullable=False)
 
     proyecto = relationship("Proyecto", back_populates="turnos")
     vehiculos = relationship(

@@ -15,6 +15,9 @@ dist/
 frontend/.vite-cache/
 *.local
 
+# Database dumps (sensitive)
+backups/
+
 # Environment
 .env
 .env.local

@@ -33,6 +33,11 @@ def create_turno(db: Session, turno: TurnoCreate, creado_por_id: Optional[str] =
         nombre=turno.nombre,
         descripcion=turno.descripcion,
         activo=turno.activo,
+        hora_entrada=turno.hora_entrada,
+        hora_salida=turno.hora_salida,
+        tipo_turno=turno.tipo_turno,
+        tipo_horario=turno.tipo_horario,
+        cambio_dia=turno.cambio_dia,
         creado_por=creado_por_id,
     )
     db.add(db_turno)

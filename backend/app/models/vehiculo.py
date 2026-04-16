@@ -20,8 +20,10 @@ class Vehiculo(Base, AuditMixin):
     conductor_id = Column(String(32), ForeignKey("conductor.conductor_id", ondelete="SET NULL"), nullable=True)
     turno_id = Column(String(32), ForeignKey("turno.turno_id", ondelete="CASCADE"), nullable=False)
     proyecto_id = Column(String(32), ForeignKey("proyecto.proyecto_id", ondelete="CASCADE"), nullable=False)
+    tipo_vehiculo_id = Column(String(32), ForeignKey("tipo_vehiculo.tipo_vehiculo_id", ondelete="SET NULL"), nullable=True)
     activo = Column(Boolean, default=True, nullable=False)
 
     conductor = relationship("Conductor", back_populates="vehiculos")
     turno = relationship("Turno", back_populates="vehiculos")
+    tipo_vehiculo = relationship("TipoVehiculo", back_populates="vehiculos")
     proyecto = relationship("Proyecto", back_populates="vehiculos")

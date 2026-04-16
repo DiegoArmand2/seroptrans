@@ -7,7 +7,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from app.core.database import SessionLocal
 from app.models.rol import Rol, RolPermisoVentana
 
-VENTANAS = ["proyecto", "turno", "tipo_pasajero", "pasajero", "conductor", "vehiculo", "ruta", "horarios"]
+VENTANAS = ["proyecto", "turno", "tipo_pasajero", "tipo_vehiculo", "pasajero", "conductor", "vehiculo", "ruta", "horarios"]
 
 
 def main():

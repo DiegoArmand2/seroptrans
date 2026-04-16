@@ -2,8 +2,16 @@ from typing import List, Optional
 
 from sqlalchemy.orm import Session
 
+from app.models.tipo_vehiculo import TipoVehiculo
 from app.models.vehiculo import Vehiculo
 from app.schemas.vehiculo import VehiculoCreate, VehiculoUpdate
+
+
+def _tipo_vehiculo_matches_proyecto(db: Session, tipo_vehiculo_id: Optional[str], proyecto_id: str) -> bool:
+    if tipo_vehiculo_id is None:
+        return True
+    tv = db.query(TipoVehiculo).filter(TipoVehiculo.tipo_vehiculo_id == tipo_vehiculo_id).first()
+    return tv is not None and tv.proyecto_id == proyecto_id
 
 
 def get_vehiculo_by_id(db: Session, vehiculo_id: str) -> Optional[Vehiculo]:
@@ -53,6 +61,9 @@ def update_vehiculo(
     if not db_vehiculo:
         return None
     data = vehiculo_update.model_dump(exclude_unset=True)
+    if "tipo_vehiculo_id" in data:
+        if not _tipo_vehiculo_matches_proyecto(db, data["tipo_vehiculo_id"], db_vehiculo.proyecto_id):
+            raise ValueError("El tipo de vehículo no pertenece al proyecto del vehículo")
     for key, value in data.items():
         setattr(db_vehiculo, key, value)
     if actualizado_por_id is not None:

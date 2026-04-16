@@ -11,6 +11,7 @@ from app.models.usuario import Usuario
 from app.models.rol import Rol, RolUsuario, RolPermisoVentana, RolPermisoProceso
 from app.models.horario_importacion import HorarioImportacion  # noqa: F401 — metadata create_all
 from app.models.tipo_pasajero import TipoPasajero  # noqa: F401 — metadata create_all
+from app.models.tipo_vehiculo import TipoVehiculo  # noqa: F401 — metadata create_all
 from app.core.security import get_password_hash
 
 
@@ -44,7 +45,7 @@ def seed():
 
         ventanas = [
             "dashboard", "usuarios", "roles", "permisos",
-            "proyecto", "turno", "tipo_pasajero", "pasajero", "conductor", "vehiculo", "ruta", "horarios",
+            "proyecto", "turno", "tipo_pasajero", "tipo_vehiculo", "pasajero", "conductor", "vehiculo", "ruta", "horarios",
         ]
         for v in ventanas:
             db.add(RolPermisoVentana(rol_id=rol_admin.rol_id, ventana=v))

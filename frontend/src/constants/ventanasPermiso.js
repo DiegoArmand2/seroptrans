@@ -10,6 +10,7 @@ export const VENTANAS_PERMISO_OPTIONS = [
   { value: 'proyecto', label: 'Proyecto' },
   { value: 'turno', label: 'Turno' },
   { value: 'tipo_pasajero', label: 'Tipo de pasajero' },
+  { value: 'tipo_vehiculo', label: 'Tipo de vehículo' },
   { value: 'pasajero', label: 'Pasajero' },
   { value: 'conductor', label: 'Conductor' },
   { value: 'vehiculo', label: 'Vehículo' },

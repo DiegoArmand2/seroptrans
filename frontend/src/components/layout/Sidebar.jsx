@@ -44,6 +44,7 @@ const menuItems = [
       { path: '/proyecto', icon: Building2, label: 'Proyecto', ventana: 'proyecto' },
       { path: '/turno', icon: Clock, label: 'Turno', ventana: 'turno' },
       { path: '/tipo-pasajero', icon: Tags, label: 'Tipo de pasajero', ventana: 'tipo_pasajero' },
+      { path: '/tipo-vehiculo', icon: Tags, label: 'Tipo de vehículo', ventana: 'tipo_vehiculo' },
       { path: '/pasajero', icon: UserCircle, label: 'Pasajero', ventana: 'pasajero' },
       { path: '/conductor', icon: Car, label: 'Conductor', ventana: 'conductor' },
       { path: '/vehiculo', icon: Bus, label: 'Vehículo', ventana: 'vehiculo' },

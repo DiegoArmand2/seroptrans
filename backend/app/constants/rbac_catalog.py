@@ -11,6 +11,7 @@ VENTANAS_PERMITIDAS = frozenset(
         "proyecto",
         "turno",
         "tipo_pasajero",
+        "tipo_vehiculo",
         "pasajero",
         "conductor",
         "vehiculo",

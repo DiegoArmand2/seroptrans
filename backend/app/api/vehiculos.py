@@ -20,6 +20,10 @@ router = APIRouter()
 
 
 def _to_response(db: Session, obj) -> VehiculoResponse:
+    tv = obj.tipo_vehiculo
+    tipo_vehiculo_nombre = None
+    if tv:
+        tipo_vehiculo_nombre = f"{tv.identificador} — {tv.nombre}"
     d = {
         "vehiculo_id": obj.vehiculo_id,
         "placa": obj.placa,
@@ -27,9 +31,11 @@ def _to_response(db: Session, obj) -> VehiculoResponse:
         "conductor_id": obj.conductor_id,
         "turno_id": obj.turno_id,
         "proyecto_id": obj.proyecto_id,
+        "tipo_vehiculo_id": obj.tipo_vehiculo_id,
         "activo": obj.activo,
         "conductor_nombre": obj.conductor.nombre if obj.conductor else None,
         "turno_nombre": obj.turno.nombre if obj.turno else None,
+        "tipo_vehiculo_nombre": tipo_vehiculo_nombre,
         "fecha_creacion": obj.fecha_creacion,
         "creado_por": obj.creado_por,
         "fecha_actualizacion": obj.fecha_actualizacion,
@@ -67,7 +73,10 @@ def crear_vehiculo(
 ):
     if not can_access_proyecto(db, current_user.usuario_id, vehiculo.proyecto_id):
         raise HTTPException(status_code=404, detail="Proyecto no encontrado")
-    v = create_vehiculo(db, vehiculo, creado_por_id=current_user.usuario_id)
+    try:
+        v = create_vehiculo(db, vehiculo, creado_por_id=current_user.usuario_id)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
     return _to_response(db, v)
 
 
@@ -92,7 +101,13 @@ def actualizar_vehiculo(
     db: Session = Depends(get_db),
     current_user: Usuario = Depends(get_current_user_required),
 ):
-    updated = update_vehiculo(db, vehiculo_id, vehiculo, actualizado_por_id=current_user.usuario_id)
+    v0 = get_vehiculo_by_id(db, vehiculo_id)
+    if not v0 or not can_access_proyecto(db, current_user.usuario_id, v0.proyecto_id):
+        raise HTTPException(status_code=404, detail="Vehículo no encontrado")
+    try:
+        updated = update_vehiculo(db, vehiculo_id, vehiculo, actualizado_por_id=current_user.usuario_id)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
     if not updated:
         raise HTTPException(status_code=404, detail="Vehículo no encontrado")
     return _to_response(db, updated)
