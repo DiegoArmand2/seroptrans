@@ -28,6 +28,11 @@ api.interceptors.request.use((config) => {
   if (token) {
     config.headers.Authorization = `Bearer ${token}`
   }
+  // Con FormData, el Content-Type por defecto (application/json) hace que axios
+  // convierta el cuerpo a JSON; el servidor espera multipart y falla con "Field required".
+  if (typeof FormData !== 'undefined' && config.data instanceof FormData) {
+    config.headers.delete('Content-Type')
+  }
   return config
 })
 
