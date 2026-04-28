@@ -26,13 +26,27 @@ def _normalize_n8n_payload(data: Any) -> Tuple[Optional[str], Optional[int], Opt
     return msg, code, title
 
 
-def call_n8n_horarios_webhook(webhook_url: str, proyecto_id: str, file_url: str) -> Tuple[Any, Optional[str]]:
-    """POST al webhook n8n con cuerpo: {\"id_proyecto\": uuid32, \"url\": url del archivo}."""
+def call_n8n_horarios_webhook(
+    webhook_url: str,
+    *,
+    proyecto_id: str,
+    file_url: str,
+    horario_id: str,
+    anio: int,
+    semana: int,
+) -> Tuple[Any, Optional[str]]:
+    """POST al webhook n8n con cuerpo JSON ampliado para trazabilidad."""
     try:
         with httpx.Client(timeout=120.0) as client:
             r = client.post(
                 webhook_url,
-                json={"id_proyecto": proyecto_id, "url": file_url},
+                json={
+                    "id_proyecto": proyecto_id,
+                    "url": file_url,
+                    "horario_id": horario_id,
+                    "anio": anio,
+                    "semana": semana,
+                },
                 headers={"Content-Type": "application/json"},
             )
     except httpx.RequestError as e:
@@ -49,10 +63,34 @@ def call_n8n_horarios_webhook(webhook_url: str, proyecto_id: str, file_url: str)
     return body, None
 
 
-def persist_importacion(
+def create_importacion(
     db: Session,
     payload: HorariosImportarRequest,
     usuario_id: str,
+) -> HorarioImportacion:
+    """
+    Crea la importación en BD antes de llamar a n8n.
+    Se actualiza luego con el resultado (o error de transporte).
+    """
+    row = HorarioImportacion(
+        proyecto_id=payload.proyecto_id,
+        anio=payload.anio,
+        numero_semana=payload.numero_semana,
+        url_archivo=payload.url,
+        creado_por=usuario_id,
+        actualizado_por=usuario_id,
+    )
+    db.add(row)
+    db.commit()
+    db.refresh(row)
+    return row
+
+
+def update_importacion_result(
+    db: Session,
+    row: HorarioImportacion,
+    usuario_id: str,
+    *,
     n8n_body: Any = None,
     transport_error: Optional[str] = None,
 ) -> HorarioImportacion:
@@ -68,21 +106,68 @@ def persist_importacion(
             except (TypeError, ValueError):
                 raw_str = str(n8n_body)[:8000]
 
-    row = HorarioImportacion(
-        proyecto_id=payload.proyecto_id,
-        fecha_referencia=payload.fecha,
-        url_archivo=payload.url,
-        respuesta_msg=msg,
-        respuesta_code=code,
-        respuesta_title=title,
-        respuesta_raw=raw_str,
-        creado_por=usuario_id,
-        actualizado_por=usuario_id,
-    )
+    row.respuesta_msg = msg
+    row.respuesta_code = code
+    row.respuesta_title = title
+    row.respuesta_raw = raw_str
+    row.actualizado_por = usuario_id
     db.add(row)
     db.commit()
     db.refresh(row)
     return row
+
+
+def persist_importacion(
+    db: Session,
+    payload: HorariosImportarRequest,
+    usuario_id: str,
+    n8n_body: Any = None,
+    transport_error: Optional[str] = None,
+) -> HorarioImportacion:
+    """
+    API previa: crea y completa en una sola llamada.
+    Se mantiene por compatibilidad interna.
+    """
+    row = create_importacion(db, payload, usuario_id)
+    return update_importacion_result(db, row, usuario_id, n8n_body=n8n_body, transport_error=transport_error)
+
+
+def get_importacion_by_id(db: Session, horario_importacion_id: str) -> Optional[HorarioImportacion]:
+    return (
+        db.query(HorarioImportacion)
+        .filter(HorarioImportacion.horario_importacion_id == horario_importacion_id)
+        .first()
+    )
+
+
+def update_importacion_datos(
+    db: Session,
+    row: HorarioImportacion,
+    *,
+    anio: int,
+    numero_semana: int,
+    url_archivo: str,
+    usuario_id: str,
+) -> HorarioImportacion:
+    row.anio = anio
+    row.numero_semana = numero_semana
+    row.url_archivo = url_archivo
+    row.actualizado_por = usuario_id
+    from datetime import datetime
+    row.fecha_actualizacion = datetime.utcnow()
+    db.add(row)
+    db.commit()
+    db.refresh(row)
+    return row
+
+
+def delete_importacion(db: Session, horario_importacion_id: str) -> bool:
+    row = get_importacion_by_id(db, horario_importacion_id)
+    if not row:
+        return False
+    db.delete(row)
+    db.commit()
+    return True
 
 
 def list_importaciones(

@@ -1,7 +1,10 @@
 import { forwardRef } from 'react'
 
 const Select = forwardRef(
-  ({ label, error, options = [], className = '', placeholder = 'Seleccionar...', ...props }, ref) => {
+  (
+    { label, error, options = [], className = '', placeholder = 'Seleccionar...', allowEmpty = true, ...props },
+    ref
+  ) => {
     return (
       <div className="w-full">
         {label && (
@@ -22,9 +25,9 @@ const Select = forwardRef(
           `}
           {...props}
         >
-          <option value="">{placeholder}</option>
+          {allowEmpty && <option value="">{placeholder}</option>}
           {options.map((opt) => (
-            <option key={opt.value} value={opt.value}>
+            <option key={opt.value} value={opt.value} title={opt.title}>
               {opt.label}
             </option>
           ))}

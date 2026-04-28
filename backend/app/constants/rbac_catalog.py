@@ -17,5 +17,6 @@ VENTANAS_PERMITIDAS = frozenset(
         "vehiculo",
         "ruta",
         "horarios",
+        "turnos_personal",
     }
 )

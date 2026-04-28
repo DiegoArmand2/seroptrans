@@ -1,5 +1,5 @@
 import uuid
-from sqlalchemy import Column, String, ForeignKey, Text, Date, Integer
+from sqlalchemy import Column, String, ForeignKey, Text, Integer
 from sqlalchemy.orm import relationship
 
 from app.core.database import Base
@@ -15,7 +15,8 @@ class HorarioImportacion(Base, AuditMixin):
 
     horario_importacion_id = Column(String(32), primary_key=True, default=generate_uuid_hex)
     proyecto_id = Column(String(32), ForeignKey("proyecto.proyecto_id", ondelete="CASCADE"), nullable=False)
-    fecha_referencia = Column(Date, nullable=False)
+    anio = Column(Integer, nullable=False)
+    numero_semana = Column(Integer, nullable=False)
     url_archivo = Column(Text, nullable=False)
     respuesta_msg = Column(Text, nullable=True)
     respuesta_code = Column(Integer, nullable=True)

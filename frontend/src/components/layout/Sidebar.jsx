@@ -20,6 +20,7 @@ import {
   Bus,
   Route,
   FileSpreadsheet,
+  ClipboardList,
 } from 'lucide-react'
 import { useAuth } from '../../hooks/useAuth'
 import { usePermissions } from '../../hooks/usePermissions'
@@ -50,6 +51,7 @@ const menuItems = [
       { path: '/vehiculo', icon: Bus, label: 'Vehículo', ventana: 'vehiculo' },
       { path: '/ruta', icon: Route, label: 'Ruta', ventana: 'ruta' },
       { path: '/horarios', icon: FileSpreadsheet, label: 'Horarios', ventana: 'horarios' },
+      { path: '/turnos-personal', icon: ClipboardList, label: 'Turnos Personal', ventana: 'turnos_personal' },
     ],
   },
 ]

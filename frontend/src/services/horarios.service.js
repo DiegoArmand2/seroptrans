@@ -1,10 +1,13 @@
 import api from './api'
 
 export const horariosService = {
-  /** Body al API: proyecto_id, fecha, url. El backend llama a n8n con { id_proyecto, url }. */
+  /** Body al API: proyecto_id, anio, numero_semana (ISO), url. n8n solo recibe { id_proyecto, url } (ampliar en backend si aplica). */
   importar: (data) => api.post('/horarios/importar', data),
   /** params opcional: { proyecto_id } para filtrar; sin proyecto_id lista según permisos (como rutas). */
   listImportaciones: (params = {}) => api.get('/horarios/importaciones', { params }),
+  getImportacion: (id) => api.get(`/horarios/importaciones/${id}`),
+  updateImportacion: (id, data) => api.put(`/horarios/importaciones/${id}`, data),
+  deleteImportacion: (id) => api.delete(`/horarios/importaciones/${id}`),
   /** Sube .xls/.xlsx y devuelve { url } para rellenar el campo URL (accesible por n8n si PUBLIC_BASE_URL es alcanzable). */
   subirArchivo: (file) => {
     const formData = new FormData()

@@ -208,7 +208,8 @@ Registro por cada intento de importación de horarios (URL enviada al webhook n8
 |---------------------------|----------------|-----|--------------------------|----------|--------------------------------|
 | `horario_importacion_id`  | `String(32)`   | Sí  | —                        | NOT NULL |                                |
 | `proyecto_id`             | `String(32)`   | —   | `proyecto.proyecto_id`   | NOT NULL | ondelete CASCADE               |
-| `fecha_referencia`        | `Date`         | —   | —                        | NOT NULL | Fecha indicada en el formulario |
+| `anio`                    | `Integer`      | —   | —                        | NOT NULL | Año ISO 8601 de la semana elegida |
+| `numero_semana`           | `Integer`      | —   | —                        | NOT NULL | Número de semana ISO (1–52/53) |
 | `url_archivo`             | `Text`         | —   | —                        | NOT NULL | URL del Excel / export         |
 | `respuesta_msg`           | `Text`         | —   | —                        | NULL     | Mensaje devuelto por n8n       |
 | `respuesta_code`          | `Integer`      | —   | —                        | NULL     | Ej. código de validación       |

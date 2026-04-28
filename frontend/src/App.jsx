@@ -16,6 +16,7 @@ import Pasajero from './pages/Pasajero'
 import Conductor from './pages/Conductor'
 import Vehiculo from './pages/Vehiculo'
 import Horarios from './pages/Horarios'
+import TurnosPersonal from './pages/TurnosPersonal'
 import Spinner from './components/ui/Spinner'
 
 const Ruta = lazy(() => import('./pages/Ruta'))
@@ -52,6 +53,7 @@ function App() {
             <Route path="conductor" element={<Conductor />} />
             <Route path="vehiculo" element={<Vehiculo />} />
             <Route path="horarios" element={<Horarios />} />
+            <Route path="turnos-personal" element={<TurnosPersonal />} />
             <Route
               path="ruta"
               element={

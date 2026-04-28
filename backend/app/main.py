@@ -1,7 +1,22 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api import auth, usuarios, roles, permisos, proyectos, turnos, tipos_pasajero, tipos_vehiculo, rutas, conductores, pasajeros, vehiculos, horarios
+from app.api import (
+    auth,
+    usuarios,
+    roles,
+    permisos,
+    proyectos,
+    turnos,
+    tipos_pasajero,
+    tipos_vehiculo,
+    rutas,
+    conductores,
+    pasajeros,
+    vehiculos,
+    horarios,
+    turnos_personal,
+)
 from app.core.config import settings
 
 app = FastAPI(
@@ -32,6 +47,7 @@ app.include_router(conductores.router, prefix="/api/conductores", tags=["conduct
 app.include_router(vehiculos.router, prefix="/api/vehiculos", tags=["vehiculos"])
 app.include_router(pasajeros.router, prefix="/api/pasajeros", tags=["pasajeros"])
 app.include_router(horarios.router, prefix="/api/horarios", tags=["horarios"])
+app.include_router(turnos_personal.router, prefix="/api/turnos-personal", tags=["turnos-personal"])
 
 
 @app.get("/api/health")
