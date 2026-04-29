@@ -30,3 +30,4 @@ class Pasajero(Base, AuditMixin):
     proyecto = relationship("Proyecto", back_populates="pasajeros")
     ruta = relationship("Ruta", back_populates="pasajeros")
     tipo_pasajero = relationship("TipoPasajero", back_populates="pasajeros")
+    demanda_viajes = relationship("DemandaViaje", back_populates="pasajero")

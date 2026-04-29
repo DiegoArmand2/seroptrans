@@ -10,6 +10,7 @@ TipoHorario = Literal["entrada", "salida"]
 
 class TurnoBase(BaseModel):
     proyecto_id: str
+    codigo: Optional[str] = Field(None, max_length=20)
     nombre: str = Field(..., max_length=60)
     descripcion: Optional[str] = Field(None, max_length=200)
     activo: bool = True
@@ -25,6 +26,7 @@ class TurnoCreate(TurnoBase):
 
 
 class TurnoUpdate(BaseModel):
+    codigo: Optional[str] = Field(None, max_length=20)
     nombre: Optional[str] = Field(None, max_length=60)
     descripcion: Optional[str] = Field(None, max_length=200)
     activo: Optional[bool] = None

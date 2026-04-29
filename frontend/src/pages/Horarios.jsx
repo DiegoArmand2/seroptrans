@@ -126,6 +126,7 @@ const Horarios = () => {
   }
 
   const openEditImportacion = async (row) => {
+    if ((row.estado || 'DR') === 'CO') return
     setEditingImport(row)
     setEditForm({
       anio: row.anio ?? anioEnCurso,
@@ -299,18 +300,20 @@ const Horarios = () => {
                 <th className="text-left py-3 px-4 font-heading text-primary font-semibold">Proyecto</th>
                 <th className="text-left py-3 px-4 font-heading text-primary font-semibold">Año</th>
                 <th className="text-left py-3 px-4 font-heading text-primary font-semibold">Número de semana</th>
+                <th className="text-left py-3 px-4 font-heading text-primary font-semibold">Estado</th>
                 <th className="text-left py-3 px-4 font-heading text-primary font-semibold">Título</th>
                 <th className="text-left py-3 px-4 font-heading text-primary font-semibold">Código</th>
                 <th className="text-left py-3 px-4 font-heading text-primary font-semibold">Registro</th>
                 <th className="text-left py-3 px-4 font-heading text-primary font-semibold">URL</th>
                 <th className="text-left py-3 px-4 font-heading text-primary font-semibold">Turnos personal</th>
+                <th className="text-left py-3 px-4 font-heading text-primary font-semibold">Ver viajes</th>
                 <th className="text-right py-3 px-4 font-heading text-primary font-semibold">Acciones</th>
               </tr>
             </thead>
             <tbody>
               {importaciones.length === 0 && (
                 <tr>
-                  <td colSpan={9} className="py-12 text-center text-muted">
+                  <td colSpan={11} className="py-12 text-center text-muted">
                     {selectedProyectoId ? 'No hay importaciones en este proyecto' : 'No hay importaciones'}
                   </td>
                 </tr>
@@ -320,6 +323,7 @@ const Horarios = () => {
                   row.anio != null && row.numero_semana != null
                     ? mondayOfIsoWeekAsLocalDateString(row.anio, row.numero_semana)
                     : ''
+                const confirmado = (row.estado || 'DR') === 'CO'
                 return (
                 <tr key={row.horario_importacion_id} className="border-b border-primary/5 hover:bg-primary/5">
                   <td className="py-3 px-4">
@@ -330,6 +334,15 @@ const Horarios = () => {
                   </td>
                   <td className="py-3 px-4 tabular-nums" title={lunesIso ? `Lunes ISO: ${lunesIso}` : ''}>
                     {row.numero_semana ?? '—'}
+                  </td>
+                  <td className="py-3 px-4">
+                    <span
+                      className={`inline-block px-2 py-0.5 rounded text-xs ${
+                        confirmado ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-900'
+                      }`}
+                    >
+                      {confirmado ? 'Confirmado' : 'Borrador'}
+                    </span>
                   </td>
                   <td className="py-3 px-4 text-muted max-w-[200px] truncate" title={row.respuesta_title}>
                     {row.respuesta_title ?? '—'}
@@ -354,6 +367,19 @@ const Horarios = () => {
                       Ver turnos
                     </button>
                   </td>
+                  <td className="py-3 px-4">
+                    <button
+                      type="button"
+                      className="text-sm font-medium text-primary hover:underline"
+                      onClick={() =>
+                        navigate(
+                          `/demanda-viajes?horario_importacion_id=${encodeURIComponent(row.horario_importacion_id)}`
+                        )
+                      }
+                    >
+                      Ver demanda
+                    </button>
+                  </td>
                   <td className="py-3 px-4 text-right">
                     <div className="flex justify-end gap-2">
                       <Button
@@ -362,6 +388,7 @@ const Horarios = () => {
                         icon={<Pencil className="w-4 h-4" />}
                         onClick={() => openEditImportacion(row)}
                         aria-label="Editar importación"
+                        disabled={confirmado}
                       />
                       <Button
                         variant="ghost"
@@ -369,6 +396,7 @@ const Horarios = () => {
                         icon={<Trash2 className="w-4 h-4 text-red-600" />}
                         onClick={() => handleEliminarImportacion(row)}
                         aria-label="Eliminar importación"
+                        disabled={confirmado}
                       />
                     </div>
                   </td>

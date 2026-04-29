@@ -17,4 +17,5 @@ export const VENTANAS_PERMISO_OPTIONS = [
   { value: 'ruta', label: 'Ruta' },
   { value: 'horarios', label: 'Horarios' },
   { value: 'turnos_personal', label: 'Turnos Personal' },
+  { value: 'demanda_viajes', label: 'Demanda Viajes' },
 ]

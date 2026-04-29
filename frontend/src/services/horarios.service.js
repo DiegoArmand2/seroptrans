@@ -8,6 +8,8 @@ export const horariosService = {
   getImportacion: (id) => api.get(`/horarios/importaciones/${id}`),
   updateImportacion: (id, data) => api.put(`/horarios/importaciones/${id}`, data),
   deleteImportacion: (id) => api.delete(`/horarios/importaciones/${id}`),
+  confirmarImportacion: (id) => api.post(`/horarios/importaciones/${id}/confirmar`),
+  procesarImportacion: (id) => api.post(`/horarios/importaciones/${id}/procesar`),
   /** Sube .xls/.xlsx y devuelve { url } para rellenar el campo URL (accesible por n8n si PUBLIC_BASE_URL es alcanzable). */
   subirArchivo: (file) => {
     const formData = new FormData()

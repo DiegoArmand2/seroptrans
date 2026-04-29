@@ -15,6 +15,7 @@ class Turno(Base, AuditMixin):
 
     turno_id = Column(String(32), primary_key=True, default=generate_uuid_hex)
     proyecto_id = Column(String(32), ForeignKey("proyecto.proyecto_id", ondelete="CASCADE"), nullable=False)
+    codigo = Column(String(20), nullable=True)
     nombre = Column(String(60), nullable=False)  # mañana, noche
     descripcion = Column(String(200), nullable=True)
     activo = Column(Boolean, default=True, nullable=False)
@@ -25,8 +26,8 @@ class Turno(Base, AuditMixin):
     cambio_dia = Column(Boolean, default=False, nullable=False)
 
     proyecto = relationship("Proyecto", back_populates="turnos")
-    vehiculos = relationship(
-        "Vehiculo",
+    demanda_viajes = relationship(
+        "DemandaViaje",
         back_populates="turno",
         cascade="all, delete-orphan",
     )

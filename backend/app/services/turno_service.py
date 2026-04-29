@@ -30,6 +30,7 @@ def get_turnos(
 def create_turno(db: Session, turno: TurnoCreate, creado_por_id: Optional[str] = None) -> Turno:
     db_turno = Turno(
         proyecto_id=turno.proyecto_id,
+        codigo=turno.codigo,
         nombre=turno.nombre,
         descripcion=turno.descripcion,
         activo=turno.activo,

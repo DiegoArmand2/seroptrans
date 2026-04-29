@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Plus, Pencil, Trash2 } from 'lucide-react'
 import PageHeader from '../components/layout/PageHeader'
 import Button from '../components/ui/Button'
@@ -12,7 +12,9 @@ import AuditoriaSection from '../components/ui/AuditoriaSection'
 import { turnosPersonalService } from '../services/turnosPersonal.service'
 import { proyectosService } from '../services/proyectos.service'
 import { pasajerosService } from '../services/pasajeros.service'
+import { horariosService } from '../services/horarios.service'
 import { useProject } from '../contexts/ProjectContext'
+import { usePermissions } from '../hooks/usePermissions'
 import { getErrorMessage } from '../utils/apiError'
 
 const emptyForm = (defaults = {}) => ({
@@ -35,10 +37,13 @@ const emptyForm = (defaults = {}) => ({
 })
 
 const TurnosPersonal = () => {
+  const navigate = useNavigate()
   const { selectedProyectoId } = useProject()
+  const { hasProceso } = usePermissions()
   const [searchParams] = useSearchParams()
   const horarioImportacionIdParam = (searchParams.get('horario_importacion_id') || '').trim()
 
+  const [importacionDetail, setImportacionDetail] = useState(null)
   const [rows, setRows] = useState([])
   const [proyectos, setProyectos] = useState([])
   const [pasajeros, setPasajeros] = useState([])
@@ -110,6 +115,26 @@ const TurnosPersonal = () => {
   useEffect(() => {
     loadData()
   }, [loadData])
+
+  useEffect(() => {
+    const id = horarioImportacionIdParam
+    if (!id) {
+      setImportacionDetail(null)
+      return
+    }
+    let cancelled = false
+    horariosService
+      .getImportacion(id)
+      .then(({ data }) => {
+        if (!cancelled) setImportacionDetail(data)
+      })
+      .catch(() => {
+        if (!cancelled) setImportacionDetail(null)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [horarioImportacionIdParam])
 
   useEffect(() => {
     setForm((prev) =>
@@ -209,6 +234,21 @@ const TurnosPersonal = () => {
       alert('Seleccione un pasajero')
       return
     }
+    const currentHorarioImportacionId = String(form.horario_importacion_id || '').trim()
+    const currentPasajeroId = String(form.pasajero_id || '').trim()
+    if (currentHorarioImportacionId && currentPasajeroId) {
+      const dup = rows.some((r) => {
+        if (editing && r.turno_personal_id === editing.turno_personal_id) return false
+        return (
+          String(r.horario_importacion_id || '').trim() === currentHorarioImportacionId &&
+          String(r.pasajero_id || '').trim() === currentPasajeroId
+        )
+      })
+      if (dup) {
+        alert('Este pasajero ya tiene un registro para esta importación')
+        return
+      }
+    }
     try {
       if (editing) {
         await turnosPersonalService.update(editing.turno_personal_id, buildUpdatePayload())
@@ -234,6 +274,46 @@ const TurnosPersonal = () => {
 
   const proyectoLabel = (pid) => proyectos.find((p) => p.proyecto_id === pid)?.nombre || pid || '—'
 
+  const horarioContextLocked =
+    !!horarioImportacionIdParam && importacionDetail && (importacionDetail.estado || 'DR') === 'CO'
+
+  const showConfirmarBtn =
+    !!horarioImportacionIdParam &&
+    importacionDetail &&
+    (importacionDetail.estado || 'DR') === 'DR' &&
+    hasProceso('confirmar_horario')
+
+  const showProcesarBtn =
+    !!horarioImportacionIdParam &&
+    importacionDetail &&
+    (importacionDetail.estado || 'DR') === 'CO' &&
+    hasProceso('procesar_horario')
+
+  const handleConfirmarHorario = async () => {
+    const id = horarioImportacionIdParam
+    if (!id) return
+    try {
+      await horariosService.confirmarImportacion(id)
+      const { data } = await horariosService.getImportacion(id)
+      setImportacionDetail(data)
+      await loadData()
+    } catch (err) {
+      alert(getErrorMessage(err) || 'No se pudo confirmar')
+    }
+  }
+
+  const handleProcesarHorario = async () => {
+    const id = horarioImportacionIdParam
+    if (!id) return
+    try {
+      const { data } = await horariosService.procesarImportacion(id)
+      alert(data?.mensaje || 'Operación registrada')
+      navigate(`/demanda-viajes?horario_importacion_id=${encodeURIComponent(id)}`)
+    } catch (err) {
+      alert(getErrorMessage(err) || 'Error al procesar')
+    }
+  }
+
   if (loading) {
     return (
       <div className="flex justify-center py-12">
@@ -252,9 +332,25 @@ const TurnosPersonal = () => {
             : 'Gestión de registros cargados/creados manualmente.'
         }
         children={
-          <Button icon={<Plus className="w-5 h-5" />} onClick={openCreate}>
-            Nuevo registro
-          </Button>
+          <div className="flex flex-wrap items-center gap-2 justify-end">
+            {showConfirmarBtn && (
+              <Button variant="accent" onClick={handleConfirmarHorario}>
+                Confirmar
+              </Button>
+            )}
+            {showProcesarBtn && (
+              <Button variant="outline" onClick={handleProcesarHorario}>
+                Procesar
+              </Button>
+            )}
+            <Button
+              icon={<Plus className="w-5 h-5" />}
+              onClick={openCreate}
+              disabled={horarioContextLocked}
+            >
+              Nuevo registro
+            </Button>
+          </div>
         }
       />
 
@@ -268,15 +364,21 @@ const TurnosPersonal = () => {
                 <th className="text-left py-3 px-4 font-heading text-primary font-semibold">Proceso</th>
                 <th className="text-left py-3 px-4 font-heading text-primary font-semibold">Cargo</th>
                 <th className="text-left py-3 px-4 font-heading text-primary font-semibold">RUT</th>
-                <th className="text-left py-3 px-4 font-heading text-primary font-semibold">Apellidos</th>
                 <th className="text-left py-3 px-4 font-heading text-primary font-semibold">Funcionarios</th>
+                <th className="text-left py-3 px-4 font-heading text-primary font-semibold">Lunes</th>
+                <th className="text-left py-3 px-4 font-heading text-primary font-semibold">Martes</th>
+                <th className="text-left py-3 px-4 font-heading text-primary font-semibold">Miércoles</th>
+                <th className="text-left py-3 px-4 font-heading text-primary font-semibold">Jueves</th>
+                <th className="text-left py-3 px-4 font-heading text-primary font-semibold">Viernes</th>
+                <th className="text-left py-3 px-4 font-heading text-primary font-semibold">Sábado</th>
+                <th className="text-left py-3 px-4 font-heading text-primary font-semibold">Domingo</th>
                 <th className="text-left py-3 px-4 font-heading text-primary font-semibold">Acciones</th>
               </tr>
             </thead>
             <tbody>
               {rows.length === 0 && (
                 <tr>
-                  <td colSpan={8} className="py-12 text-center text-muted">
+                  <td colSpan={14} className="py-12 text-center text-muted">
                     No hay registros
                   </td>
                 </tr>
@@ -288,16 +390,29 @@ const TurnosPersonal = () => {
                   <td className="py-3 px-4 text-muted">{r.proceso || '—'}</td>
                   <td className="py-3 px-4 text-muted">{r.cargo || '—'}</td>
                   <td className="py-3 px-4 text-muted">{r.rut || '—'}</td>
-                  <td className="py-3 px-4 text-muted">{r.apellidos || '—'}</td>
                   <td className="py-3 px-4 text-muted">{r.funcionarios || '—'}</td>
+                  <td className="py-3 px-4 text-muted">{r.dia_09 || '—'}</td>
+                  <td className="py-3 px-4 text-muted">{r.dia_10 || '—'}</td>
+                  <td className="py-3 px-4 text-muted">{r.dia_11 || '—'}</td>
+                  <td className="py-3 px-4 text-muted">{r.dia_12 || '—'}</td>
+                  <td className="py-3 px-4 text-muted">{r.dia_13 || '—'}</td>
+                  <td className="py-3 px-4 text-muted">{r.dia_14 || '—'}</td>
+                  <td className="py-3 px-4 text-muted">{r.dia_15 || '—'}</td>
                   <td className="py-3 px-4 text-right">
                     <div className="flex justify-end gap-2">
-                      <Button variant="ghost" size="sm" icon={<Pencil className="w-4 h-4" />} onClick={() => openEdit(r)} />
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        icon={<Pencil className="w-4 h-4" />}
+                        onClick={() => openEdit(r)}
+                        disabled={horarioContextLocked}
+                      />
                       <Button
                         variant="ghost"
                         size="sm"
                         icon={<Trash2 className="w-4 h-4 text-red-600" />}
                         onClick={() => handleDelete(r)}
+                        disabled={horarioContextLocked}
                       />
                     </div>
                   </td>
@@ -310,6 +425,11 @@ const TurnosPersonal = () => {
 
       <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} title={editing ? 'Editar registro' : 'Nuevo registro'} size="xl">
         <form onSubmit={handleSubmit} className="space-y-4">
+          {horarioContextLocked && (
+            <p className="text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+              Este horario está confirmado: solo lectura.
+            </p>
+          )}
           <Select
             label="Proyecto"
             options={proyectoOptions}
@@ -319,14 +439,14 @@ const TurnosPersonal = () => {
               setForm((f) => ({ ...f, proyecto_id: pid, pasajero_id: '' }))
               fetchPasajeros(pid)
             }}
-            disabled={!!editing || !!selectedProyectoId}
+            disabled={!!editing || !!selectedProyectoId || horarioContextLocked}
             required
           />
           <Input
             label="Horario importación ID"
             value={form.horario_importacion_id}
             onChange={(e) => setForm({ ...form, horario_importacion_id: e.target.value })}
-            disabled={!!editing || !!horarioImportacionIdParam}
+            disabled={!!editing || !!horarioImportacionIdParam || horarioContextLocked}
             placeholder="horario_importacion_id"
             required
           />
@@ -334,33 +454,44 @@ const TurnosPersonal = () => {
             label="Pasajero"
             options={pasajeroOptions}
             value={form.pasajero_id}
-            onChange={(e) => setForm({ ...form, pasajero_id: e.target.value })}
-            disabled={!(form.proyecto_id || selectedProyectoId) || loadingPasajeros}
+            onChange={(e) => {
+              const pasajeroId = e.target.value
+              const p = pasajeros.find((x) => x.pasajero_id === pasajeroId) || null
+              setForm((f) => ({
+                ...f,
+                pasajero_id: pasajeroId,
+                rut: p?.cedula || '',
+                apellidos: p?.nombre || '',
+                funcionarios: p?.nombre || '',
+              }))
+            }}
+            disabled={horarioContextLocked || !(form.proyecto_id || selectedProyectoId) || loadingPasajeros}
             placeholder="Seleccionar pasajero"
             required
           />
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Input label="Empresa" value={form.empresa} onChange={(e) => setForm({ ...form, empresa: e.target.value })} />
-            <Input label="Proceso" value={form.proceso} onChange={(e) => setForm({ ...form, proceso: e.target.value })} />
-            <Input label="Cargo" value={form.cargo} onChange={(e) => setForm({ ...form, cargo: e.target.value })} />
-            <Input label="RUT" value={form.rut} onChange={(e) => setForm({ ...form, rut: e.target.value })} />
-            <Input label="Apellidos" value={form.apellidos} onChange={(e) => setForm({ ...form, apellidos: e.target.value })} />
+            <Input label="Empresa" value={form.empresa} onChange={(e) => setForm({ ...form, empresa: e.target.value })} disabled={horarioContextLocked} />
+            <Input label="Proceso" value={form.proceso} onChange={(e) => setForm({ ...form, proceso: e.target.value })} disabled={horarioContextLocked} />
+            <Input label="Cargo" value={form.cargo} onChange={(e) => setForm({ ...form, cargo: e.target.value })} disabled={horarioContextLocked} />
+            <Input label="RUT" value={form.rut} onChange={(e) => setForm({ ...form, rut: e.target.value })} disabled={horarioContextLocked} />
+            <Input label="Apellidos" value={form.apellidos} onChange={(e) => setForm({ ...form, apellidos: e.target.value })} disabled={horarioContextLocked} />
             <Input
               label="Funcionarios"
               value={form.funcionarios}
               onChange={(e) => setForm({ ...form, funcionarios: e.target.value })}
+              disabled={horarioContextLocked}
             />
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <Input label="Día 09" value={form.dia_09} onChange={(e) => setForm({ ...form, dia_09: e.target.value })} />
-            <Input label="Día 10" value={form.dia_10} onChange={(e) => setForm({ ...form, dia_10: e.target.value })} />
-            <Input label="Día 11" value={form.dia_11} onChange={(e) => setForm({ ...form, dia_11: e.target.value })} />
-            <Input label="Día 12" value={form.dia_12} onChange={(e) => setForm({ ...form, dia_12: e.target.value })} />
-            <Input label="Día 13" value={form.dia_13} onChange={(e) => setForm({ ...form, dia_13: e.target.value })} />
-            <Input label="Día 14" value={form.dia_14} onChange={(e) => setForm({ ...form, dia_14: e.target.value })} />
-            <Input label="Día 15" value={form.dia_15} onChange={(e) => setForm({ ...form, dia_15: e.target.value })} />
+            <Input label="Lunes" value={form.dia_09} onChange={(e) => setForm({ ...form, dia_09: e.target.value })} disabled={horarioContextLocked} />
+            <Input label="Martes" value={form.dia_10} onChange={(e) => setForm({ ...form, dia_10: e.target.value })} disabled={horarioContextLocked} />
+            <Input label="Miércoles" value={form.dia_11} onChange={(e) => setForm({ ...form, dia_11: e.target.value })} disabled={horarioContextLocked} />
+            <Input label="Jueves" value={form.dia_12} onChange={(e) => setForm({ ...form, dia_12: e.target.value })} disabled={horarioContextLocked} />
+            <Input label="Viernes" value={form.dia_13} onChange={(e) => setForm({ ...form, dia_13: e.target.value })} disabled={horarioContextLocked} />
+            <Input label="Sábado" value={form.dia_14} onChange={(e) => setForm({ ...form, dia_14: e.target.value })} disabled={horarioContextLocked} />
+            <Input label="Domingo" value={form.dia_15} onChange={(e) => setForm({ ...form, dia_15: e.target.value })} disabled={horarioContextLocked} />
           </div>
 
           <AuditoriaSection data={editingFull} />
@@ -372,7 +503,7 @@ const TurnosPersonal = () => {
             <Button
               type="submit"
               variant="accent"
-              disabled={loadingPasajeros || !form.pasajero_id?.trim()}
+              disabled={horarioContextLocked || loadingPasajeros || !form.pasajero_id?.trim()}
             >
               {editing ? 'Guardar' : 'Crear'}
             </Button>

@@ -10,7 +10,7 @@ import Spinner from '../components/ui/Spinner'
 import AuditoriaSection from '../components/ui/AuditoriaSection'
 import { vehiculosService } from '../services/vehiculos.service'
 import { conductoresService } from '../services/conductores.service'
-import { turnosService } from '../services/turnos.service'
+import { rutasService } from '../services/rutas.service'
 import { tiposVehiculoService } from '../services/tiposVehiculo.service'
 import { useProject } from '../contexts/ProjectContext'
 import { getErrorMessage } from '../utils/apiError'
@@ -19,7 +19,7 @@ const Vehiculo = () => {
   const { selectedProyectoId, proyectos } = useProject()
   const [vehiculos, setVehiculos] = useState([])
   const [conductores, setConductores] = useState([])
-  const [turnos, setTurnos] = useState([])
+  const [rutas, setRutas] = useState([])
   const [tiposVehiculo, setTiposVehiculo] = useState([])
   const [loading, setLoading] = useState(true)
   const [modalOpen, setModalOpen] = useState(false)
@@ -29,7 +29,7 @@ const Vehiculo = () => {
     placa: '',
     capacidad: 16,
     conductor_id: '',
-    turno_id: '',
+    ruta_id: '',
     tipo_vehiculo_id: '',
     proyecto_id: '',
     activo: true,
@@ -48,13 +48,13 @@ const Vehiculo = () => {
   const loadAux = async (proyectoId) => {
     if (!proyectoId) return
     try {
-      const [cRes, tRes, tvRes] = await Promise.all([
+      const [cRes, rRes, tvRes] = await Promise.all([
         conductoresService.list({ proyecto_id: proyectoId }),
-        turnosService.list({ proyecto_id: proyectoId }),
+        rutasService.list({ proyecto_id: proyectoId }),
         tiposVehiculoService.list({ proyecto_id: proyectoId }),
       ])
       setConductores(cRes.data || [])
-      setTurnos(tRes.data || [])
+      setRutas(rRes.data || [])
       setTiposVehiculo(tvRes.data || [])
     } catch (err) {
       console.error(err)
@@ -71,7 +71,7 @@ const Vehiculo = () => {
     loadData()
   }, [selectedProyectoId])
 
-  // Cargar conductores/turnos cuando admin cambia proyecto en el formulario
+  // Cargar conductores/rutas cuando admin cambia proyecto en el formulario
   useEffect(() => {
     if (modalOpen && form.proyecto_id && !selectedProyectoId) {
       loadAux(form.proyecto_id)
@@ -85,7 +85,7 @@ const Vehiculo = () => {
       placa: '',
       capacidad: 16,
       conductor_id: '',
-      turno_id: '',
+      ruta_id: '',
       tipo_vehiculo_id: '',
       proyecto_id: selectedProyectoId || '',
       activo: true,
@@ -99,7 +99,7 @@ const Vehiculo = () => {
       placa: v.placa,
       capacidad: v.capacidad ?? 16,
       conductor_id: v.conductor_id || '',
-      turno_id: v.turno_id || '',
+      ruta_id: v.ruta_id || '',
       tipo_vehiculo_id: v.tipo_vehiculo_id || '',
       proyecto_id: v.proyecto_id || selectedProyectoId || '',
       activo: v.activo ?? true,
@@ -125,7 +125,7 @@ const Vehiculo = () => {
         placa: form.placa,
         capacidad: form.capacidad,
         conductor_id: form.conductor_id || null,
-        turno_id: form.turno_id,
+        ruta_id: form.ruta_id || null,
         tipo_vehiculo_id: form.tipo_vehiculo_id || null,
         proyecto_id: proyectoId,
         activo: form.activo ?? true,
@@ -153,7 +153,7 @@ const Vehiculo = () => {
   }
 
   const conductorOptions = conductores.map((c) => ({ value: c.conductor_id, label: c.nombre }))
-  const turnoOptions = turnos.map((t) => ({ value: t.turno_id, label: t.nombre }))
+  const rutaOptions = rutas.map((r) => ({ value: r.ruta_id, label: r.nombre }))
   const tipoVehiculoOptions = tiposVehiculo.map((tv) => ({
     value: tv.tipo_vehiculo_id,
     label: `${tv.identificador} — ${tv.nombre}`,
@@ -174,7 +174,7 @@ const Vehiculo = () => {
         title="Vehículo"
         description={
           selectedProyectoId
-            ? 'Gestión de vehículos con placa, capacidad, tipo, conductor y turno'
+            ? 'Gestión de vehículos con placa, capacidad, tipo, conductor y ruta'
             : 'Mostrando todos los vehículos. Al crear, seleccione el proyecto en el formulario.'
         }
         children={
@@ -193,7 +193,7 @@ const Vehiculo = () => {
                 <th className="text-left py-3 px-4 font-heading text-primary font-semibold">Placa</th>
                 <th className="text-left py-3 px-4 font-heading text-primary font-semibold">Capacidad</th>
                 <th className="text-left py-3 px-4 font-heading text-primary font-semibold">Conductor</th>
-                <th className="text-left py-3 px-4 font-heading text-primary font-semibold">Turno</th>
+                <th className="text-left py-3 px-4 font-heading text-primary font-semibold">Ruta</th>
                 <th className="text-left py-3 px-4 font-heading text-primary font-semibold">Tipo de vehículo</th>
                 <th className="text-left py-3 px-4 font-heading text-primary font-semibold">Estado</th>
                 <th className="text-right py-3 px-4 font-heading text-primary font-semibold">Acciones</th>
@@ -213,7 +213,7 @@ const Vehiculo = () => {
                   <td className="py-3 px-4 font-mono">{v.placa}</td>
                   <td className="py-3 px-4">{v.capacidad}</td>
                   <td className="py-3 px-4">{v.conductor_nombre || '—'}</td>
-                  <td className="py-3 px-4">{v.turno_nombre || '—'}</td>
+                  <td className="py-3 px-4">{v.ruta_nombre || '—'}</td>
                   <td className="py-3 px-4 text-muted">{v.tipo_vehiculo_nombre || '—'}</td>
                   <td className="py-3 px-4">
                     <span
@@ -254,7 +254,7 @@ const Vehiculo = () => {
             options={proyectoOptions}
             value={form.proyecto_id || selectedProyectoId}
             onChange={(e) =>
-              setForm({ ...form, proyecto_id: e.target.value, turno_id: '', conductor_id: '', tipo_vehiculo_id: '' })
+              setForm({ ...form, proyecto_id: e.target.value, ruta_id: '', conductor_id: '', tipo_vehiculo_id: '' })
             }
             placeholder="Seleccionar proyecto"
             disabled={!!editing || !!selectedProyectoId}
@@ -281,12 +281,11 @@ const Vehiculo = () => {
             placeholder="Seleccionar conductor"
           />
           <Select
-            label="Turno"
-            options={turnoOptions}
-            value={form.turno_id}
-            onChange={(e) => setForm({ ...form, turno_id: e.target.value })}
-            placeholder="Seleccionar turno"
-            required
+            label="Ruta"
+            options={rutaOptions}
+            value={form.ruta_id}
+            onChange={(e) => setForm({ ...form, ruta_id: e.target.value })}
+            placeholder="Seleccionar ruta (opcional)"
           />
           <Select
             label="Tipo de vehículo"

@@ -7,4 +7,6 @@ export const PROCESOS_PERMISO_OPTIONS = [
   { value: 'editar', label: 'Editar' },
   { value: 'eliminar', label: 'Eliminar' },
   { value: 'asignar', label: 'Asignar' },
+  { value: 'confirmar_horario', label: 'Confirmar horario' },
+  { value: 'procesar_horario', label: 'Procesar horario' },
 ]

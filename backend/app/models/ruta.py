@@ -29,3 +29,4 @@ class Ruta(Base, AuditMixin):
         back_populates="ruta",
         cascade="all, delete-orphan",
     )
+    vehiculos = relationship("Vehiculo", back_populates="ruta")

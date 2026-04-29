@@ -18,9 +18,14 @@ class HorarioImportacion(Base, AuditMixin):
     anio = Column(Integer, nullable=False)
     numero_semana = Column(Integer, nullable=False)
     url_archivo = Column(Text, nullable=False)
+    estado = Column(String(2), nullable=False, default="DR")
     respuesta_msg = Column(Text, nullable=True)
     respuesta_code = Column(Integer, nullable=True)
     respuesta_title = Column(String(300), nullable=True)
     respuesta_raw = Column(Text, nullable=True)
 
     proyecto = relationship("Proyecto")
+    demanda_viajes = relationship(
+        "DemandaViaje",
+        back_populates="horario_importacion",
+    )

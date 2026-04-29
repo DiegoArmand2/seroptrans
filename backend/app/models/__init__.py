@@ -9,9 +9,11 @@ from app.models.pasajero import Pasajero
 from app.models.tipo_pasajero import TipoPasajero
 from app.models.tipo_vehiculo import TipoVehiculo
 from app.models.horario_importacion import HorarioImportacion
+from app.models.demanda_viaje import DemandaViaje
 
 __all__ = [
     "Usuario", "Rol", "RolUsuario", "RolPermisoVentana", "RolPermisoProceso", "RolPermisoProyecto",
     "Proyecto", "Turno", "TipoPasajero", "TipoVehiculo", "Ruta", "Conductor", "ConductorRuta", "ProyectoConductor", "Vehiculo", "Pasajero",
     "HorarioImportacion",
+    "DemandaViaje",
 ]

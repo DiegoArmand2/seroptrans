@@ -38,6 +38,7 @@ class HorarioImportacionListItem(BaseModel):
     proyecto_id: str
     anio: int
     numero_semana: int
+    estado: str = "DR"
     url_archivo: str
     respuesta_msg: Optional[str] = None
     respuesta_code: Optional[int] = None

@@ -41,6 +41,7 @@ services:
       PUBLIC_BASE_URL: ${PUBLIC_BASE_URL}
       # Valor por defecto si .env no define la variable (evita 503 por webhook vacío)
       N8N_HORARIOS_WEBHOOK_URL: ${N8N_HORARIOS_WEBHOOK_URL:-https://n8nadm.admagentes.online/webhook/st_horarios}
+      N8N_ROUTES1OF3_WEBHOOK_URL: ${N8N_ROUTES1OF3_WEBHOOK_URL:-https://n8nadm.admagentes.online/webhook/routes1of3}
       HORARIOS_UPLOAD_DIR: /app/uploads/horarios
     ports:
       - "8000:8000"

@@ -16,6 +16,7 @@ import { getErrorMessage } from '../utils/apiError'
 const TIPO_TURNO_OPTIONS = [
   { value: 'matutino', label: 'Matutino' },
   { value: 'nocturno', label: 'Nocturno' },
+  { value: 'ambos', label: 'Ambos' },
 ]
 
 const TIPO_HORARIO_OPTIONS = [
@@ -25,6 +26,7 @@ const TIPO_HORARIO_OPTIONS = [
 
 const defaultForm = (proyectoId = '') => ({
   proyecto_id: proyectoId,
+  codigo: '',
   nombre: '',
   descripcion: '',
   activo: true,
@@ -49,6 +51,7 @@ function timeInputToPayload(v) {
 function turnoToForm(t, proyectoFallback = '') {
   return {
     proyecto_id: t.proyecto_id || proyectoFallback,
+    codigo: t.codigo ?? '',
     nombre: t.nombre ?? '',
     descripcion: t.descripcion || '',
     activo: t.activo ?? true,
@@ -117,6 +120,7 @@ const Turno = () => {
 
   const buildPayload = () => ({
     proyecto_id: form.proyecto_id,
+    codigo: form.codigo?.trim() || null,
     nombre: form.nombre,
     descripcion: form.descripcion || null,
     activo: form.activo,
@@ -133,6 +137,7 @@ const Turno = () => {
       const payload = buildPayload()
       if (editing) {
         await turnosService.update(editing.turno_id, {
+          codigo: payload.codigo,
           nombre: payload.nombre,
           descripcion: payload.descripcion,
           activo: payload.activo,
@@ -186,6 +191,7 @@ const Turno = () => {
             <thead>
               <tr className="border-b border-primary/10">
                 <th className="text-left py-3 px-4 font-heading text-primary font-semibold">Proyecto</th>
+                <th className="text-left py-3 px-4 font-heading text-primary font-semibold">Código</th>
                 <th className="text-left py-3 px-4 font-heading text-primary font-semibold">Nombre</th>
                 <th className="text-left py-3 px-4 font-heading text-primary font-semibold">Entrada</th>
                 <th className="text-left py-3 px-4 font-heading text-primary font-semibold">Salida</th>
@@ -198,7 +204,7 @@ const Turno = () => {
             <tbody>
               {turnos.length === 0 && (
                 <tr>
-                  <td colSpan={8} className="py-12 text-center text-muted">
+                  <td colSpan={9} className="py-12 text-center text-muted">
                     {selectedProyectoId ? 'No hay turnos en este proyecto' : 'No hay turnos'}
                   </td>
                 </tr>
@@ -206,6 +212,7 @@ const Turno = () => {
               {turnos.map((t) => (
                 <tr key={t.turno_id} className="border-b border-primary/5 hover:bg-primary/5">
                   <td className="py-3 px-4">{proyectos.find((p) => p.proyecto_id === t.proyecto_id)?.nombre || '-'}</td>
+                  <td className="py-3 px-4 text-muted">{t.codigo || '—'}</td>
                   <td className="py-3 px-4">{t.nombre}</td>
                   <td className="py-3 px-4 text-muted">{formatHoraCell(t.hora_entrada)}</td>
                   <td className="py-3 px-4 text-muted">{formatHoraCell(t.hora_salida)}</td>
@@ -238,6 +245,13 @@ const Turno = () => {
             onChange={(e) => setForm({ ...form, proyecto_id: e.target.value })}
             disabled={!!editing || !!selectedProyectoId}
             required
+          />
+          <Input
+            label="Código"
+            value={form.codigo}
+            onChange={(e) => setForm({ ...form, codigo: e.target.value })}
+            maxLength={20}
+            placeholder="Hasta 20 caracteres"
           />
           <Input label="Nombre" value={form.nombre} onChange={(e) => setForm({ ...form, nombre: e.target.value })} placeholder="mañana, noche" required />
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

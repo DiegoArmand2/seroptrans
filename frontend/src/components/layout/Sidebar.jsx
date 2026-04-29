@@ -21,6 +21,8 @@ import {
   Route,
   FileSpreadsheet,
   ClipboardList,
+  Truck,
+  MapPinned,
 } from 'lucide-react'
 import { useAuth } from '../../hooks/useAuth'
 import { usePermissions } from '../../hooks/usePermissions'
@@ -54,11 +56,23 @@ const menuItems = [
       { path: '/turnos-personal', icon: ClipboardList, label: 'Turnos Personal', ventana: 'turnos_personal' },
     ],
   },
+  {
+    id: 'logistica',
+    label: 'Logística',
+    icon: Truck,
+    children: [
+      { path: '/demanda-viajes', icon: MapPinned, label: 'Demanda Viajes', ventana: 'demanda_viajes' },
+    ],
+  },
 ]
 
-const Sidebar = () => {
+const Sidebar = ({ collapsed = false, onToggleCollapsed }) => {
   const [open, setOpen] = useState(false)
-  const [expandedMenus, setExpandedMenus] = useState({ administracion: true, 'datos-maestros': true })
+  const [expandedMenus, setExpandedMenus] = useState({
+    administracion: true,
+    'datos-maestros': true,
+    logistica: true,
+  })
   const { user, logout } = useAuth()
   const { hasVentana } = usePermissions()
   const navigate = useNavigate()
@@ -96,16 +110,26 @@ const Sidebar = () => {
 
       <aside
         className={`
-          fixed top-0 left-0 z-40 h-full w-64 bg-primary text-white
+          fixed top-0 left-0 z-40 h-full bg-primary text-white
           transform transition-transform duration-200 ease-smooth
           lg:translate-x-0
           ${open ? 'translate-x-0' : '-translate-x-full'}
+          ${collapsed ? 'lg:w-20 w-64' : 'w-64'}
         `}
       >
         <div className="flex flex-col h-full">
           <div className="p-6 border-b border-white/10">
             <div className="flex items-center justify-between">
-              <h1 className="text-xl font-heading font-bold">SeropTrans</h1>
+              <h1 className={`text-xl font-heading font-bold ${collapsed ? 'lg:hidden' : ''}`}>SeropTrans</h1>
+              <button
+                type="button"
+                className="hidden lg:inline-flex p-2 rounded-lg hover:bg-white/10"
+                onClick={onToggleCollapsed}
+                aria-label={collapsed ? 'Expandir menú' : 'Colapsar menú'}
+                title={collapsed ? 'Expandir menú' : 'Colapsar menú'}
+              >
+                {collapsed ? <ChevronRight className="w-5 h-5" /> : <ChevronDown className="w-5 h-5 rotate-90" />}
+              </button>
               <button
                 className="lg:hidden p-2 rounded-lg hover:bg-white/10"
                 onClick={() => setOpen(false)}
@@ -114,7 +138,7 @@ const Sidebar = () => {
                 <X className="w-5 h-5" />
               </button>
             </div>
-            <p className="text-sm text-white/70 mt-1">Gestión de Transporte</p>
+            <p className={`text-sm text-white/70 mt-1 ${collapsed ? 'lg:hidden' : ''}`}>Gestión de Transporte</p>
           </div>
 
           <nav className="flex-1 overflow-y-auto p-4">
@@ -127,6 +151,7 @@ const Sidebar = () => {
                       <NavLink
                         to={item.path}
                         onClick={() => setOpen(false)}
+                        title={item.label}
                         className={({ isActive }) =>
                           `flex items-center gap-3 px-4 py-3 rounded-lg transition-colors duration-200 ${
                             isActive ? 'bg-accent' : 'hover:bg-white/10'
@@ -134,7 +159,7 @@ const Sidebar = () => {
                         }
                       >
                         <item.icon className="w-5 h-5 flex-shrink-0" />
-                        <span>{item.label}</span>
+                        <span className={collapsed ? 'lg:hidden' : ''}>{item.label}</span>
                         <ChevronRight className="w-4 h-4 ml-auto opacity-50" />
                       </NavLink>
                     </li>
@@ -152,26 +177,35 @@ const Sidebar = () => {
                     <li key={item.id || item.label}>
                       <button
                         type="button"
-                        onClick={() => toggleMenu(item.id)}
+                        onClick={() => {
+                          if (collapsed) {
+                            onToggleCollapsed?.()
+                            return
+                          }
+                          toggleMenu(item.id)
+                        }}
+                        title={item.label}
                         className={`flex items-center gap-3 w-full px-4 py-3 rounded-lg transition-colors duration-200 hover:bg-white/10 ${
                           isMenuActive(item.children) ? 'bg-white/5' : ''
                         }`}
                       >
                         <item.icon className="w-5 h-5 flex-shrink-0" />
-                        <span className="flex-1 text-left">{item.label}</span>
-                        {expanded ? (
-                          <ChevronDown className="w-4 h-4 opacity-50" />
-                        ) : (
-                          <ChevronRight className="w-4 h-4 opacity-50" />
-                        )}
+                        <span className={`flex-1 text-left ${collapsed ? 'lg:hidden' : ''}`}>{item.label}</span>
+                        {!collapsed &&
+                          (expanded ? (
+                            <ChevronDown className="w-4 h-4 opacity-50" />
+                          ) : (
+                            <ChevronRight className="w-4 h-4 opacity-50" />
+                          ))}
                       </button>
-                      {expanded && hasContent && (
+                      {!collapsed && expanded && hasContent && (
                         <ul className="mt-1 ml-4 pl-4 border-l border-white/20 space-y-1">
                           {visibleChildren.map((child) => (
                             <li key={child.path}>
                               <NavLink
                                 to={child.path}
                                 onClick={() => setOpen(false)}
+                                title={child.label}
                                 className={({ isActive }) =>
                                   `flex items-center gap-3 px-3 py-2 rounded-lg transition-colors duration-200 text-sm ${
                                     isActive
@@ -181,7 +215,7 @@ const Sidebar = () => {
                                 }
                               >
                                 <child.icon className="w-4 h-4 flex-shrink-0 opacity-80" />
-                                <span>{child.label}</span>
+                                <span className={collapsed ? 'lg:hidden' : ''}>{child.label}</span>
                               </NavLink>
                             </li>
                           ))}
@@ -196,11 +230,11 @@ const Sidebar = () => {
           </nav>
 
           <div className="p-4 border-t border-white/10">
-            <div className="flex items-center gap-3 px-4 py-3 mb-2">
+            <div className="flex items-center gap-3 px-4 py-3 mb-2" title={user?.nombre_usuario || ''}>
               <div className="w-10 h-10 rounded-full bg-accent/20 flex items-center justify-center font-heading font-semibold">
                 {user?.nombre_usuario?.charAt(0) || '?'}
               </div>
-              <div className="flex-1 min-w-0">
+              <div className={`flex-1 min-w-0 ${collapsed ? 'lg:hidden' : ''}`}>
                 <p className="font-medium truncate">{user?.nombre_usuario}</p>
                 <p className="text-sm text-white/70 truncate">{user?.login}</p>
               </div>
@@ -209,9 +243,10 @@ const Sidebar = () => {
             <button
               onClick={handleLogout}
               className="flex items-center gap-3 w-full px-4 py-3 rounded-lg hover:bg-red-500/20 text-red-200 hover:text-red-100 transition-colors"
+              title="Cerrar sesión"
             >
               <LogOut className="w-5 h-5" />
-              <span>Cerrar sesión</span>
+              <span className={collapsed ? 'lg:hidden' : ''}>Cerrar sesión</span>
             </button>
           </div>
         </div>

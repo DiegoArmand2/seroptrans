@@ -5,6 +5,9 @@ import httpx
 from sqlalchemy.orm import Session
 
 from app.models.horario_importacion import HorarioImportacion
+
+ESTADO_BORRADOR = "DR"
+ESTADO_CONFIRMADO = "CO"
 from app.schemas.horario_importacion import HorariosImportarRequest
 
 
@@ -51,6 +54,37 @@ def call_n8n_horarios_webhook(
             )
     except httpx.RequestError as e:
         return None, f"Error de red al contactar el servicio de horarios: {e}"
+
+    text = r.text
+    try:
+        body = r.json()
+    except json.JSONDecodeError:
+        if r.is_success:
+            return None, f"Respuesta no JSON del servicio (HTTP {r.status_code})"
+        return None, text[:2000] if text else f"HTTP {r.status_code}"
+
+    return body, None
+
+
+def call_n8n_routes1of3_webhook(
+    webhook_url: str,
+    *,
+    proyecto_id: str,
+    horario_id: str,
+) -> Tuple[Any, Optional[str]]:
+    """POST al webhook n8n para procesar horarios (routes1of3)."""
+    try:
+        with httpx.Client(timeout=120.0) as client:
+            r = client.post(
+                webhook_url,
+                json={
+                    "id_proyecto": proyecto_id,
+                    "horario_id": horario_id,
+                },
+                headers={"Content-Type": "application/json"},
+            )
+    except httpx.RequestError as e:
+        return None, f"Error de red al contactar el servicio de procesamiento: {e}"
 
     text = r.text
     try:
@@ -149,6 +183,8 @@ def update_importacion_datos(
     url_archivo: str,
     usuario_id: str,
 ) -> HorarioImportacion:
+    if (row.estado or ESTADO_BORRADOR) == ESTADO_CONFIRMADO:
+        raise ValueError("No se puede editar un horario confirmado")
     row.anio = anio
     row.numero_semana = numero_semana
     row.url_archivo = url_archivo
@@ -164,6 +200,8 @@ def update_importacion_datos(
 def delete_importacion(db: Session, horario_importacion_id: str) -> bool:
     row = get_importacion_by_id(db, horario_importacion_id)
     if not row:
+        return False
+    if (row.estado or ESTADO_BORRADOR) == ESTADO_CONFIRMADO:
         return False
     db.delete(row)
     db.commit()
@@ -189,3 +227,46 @@ def list_importaciones(
         q = q.filter(HorarioImportacion.proyecto_id.in_(allowed_proyecto_ids))
     cap = min(max(limit, 1), 200)
     return q.order_by(HorarioImportacion.fecha_creacion.desc()).limit(cap).all()
+
+
+def exists_otro_confirmado_misma_semana(
+    db: Session,
+    *,
+    proyecto_id: str,
+    anio: int,
+    numero_semana: int,
+    exclude_horario_importacion_id: str,
+) -> bool:
+    q = (
+        db.query(HorarioImportacion)
+        .filter(HorarioImportacion.proyecto_id == proyecto_id)
+        .filter(HorarioImportacion.anio == anio)
+        .filter(HorarioImportacion.numero_semana == numero_semana)
+        .filter(HorarioImportacion.estado == ESTADO_CONFIRMADO)
+        .filter(HorarioImportacion.horario_importacion_id != exclude_horario_importacion_id)
+    )
+    return q.first() is not None
+
+
+def confirmar_importacion(db: Session, row: HorarioImportacion, usuario_id: str) -> HorarioImportacion:
+    if (row.estado or ESTADO_BORRADOR) == ESTADO_CONFIRMADO:
+        return row
+    if exists_otro_confirmado_misma_semana(
+        db,
+        proyecto_id=row.proyecto_id,
+        anio=row.anio,
+        numero_semana=row.numero_semana,
+        exclude_horario_importacion_id=row.horario_importacion_id,
+    ):
+        raise ValueError(
+            f"No se puede confirmar un horario para la semana {row.numero_semana}: ya existe un horario confirmado."
+        )
+    row.estado = ESTADO_CONFIRMADO
+    row.actualizado_por = usuario_id
+    from datetime import datetime
+
+    row.fecha_actualizacion = datetime.utcnow()
+    db.add(row)
+    db.commit()
+    db.refresh(row)
+    return row

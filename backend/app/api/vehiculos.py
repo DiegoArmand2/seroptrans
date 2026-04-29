@@ -29,12 +29,12 @@ def _to_response(db: Session, obj) -> VehiculoResponse:
         "placa": obj.placa,
         "capacidad": obj.capacidad,
         "conductor_id": obj.conductor_id,
-        "turno_id": obj.turno_id,
+        "ruta_id": obj.ruta_id,
         "proyecto_id": obj.proyecto_id,
         "tipo_vehiculo_id": obj.tipo_vehiculo_id,
         "activo": obj.activo,
         "conductor_nombre": obj.conductor.nombre if obj.conductor else None,
-        "turno_nombre": obj.turno.nombre if obj.turno else None,
+        "ruta_nombre": obj.ruta.nombre if obj.ruta else None,
         "tipo_vehiculo_nombre": tipo_vehiculo_nombre,
         "fecha_creacion": obj.fecha_creacion,
         "creado_por": obj.creado_por,
@@ -55,14 +55,14 @@ def _to_response(db: Session, obj) -> VehiculoResponse:
 @router.get("", response_model=List[VehiculoResponse])
 def list_vehiculos(
     proyecto_id: Optional[str] = None,
-    turno_id: Optional[str] = None,
+    ruta_id: Optional[str] = None,
     skip: int = 0,
     limit: int = 100,
     db: Session = Depends(get_db),
     current_user: Usuario = Depends(get_current_user_required),
 ):
     allowed = get_user_proyectos(db, current_user.usuario_id)
-    return [_to_response(db, v) for v in get_vehiculos(db, proyecto_id=proyecto_id, turno_id=turno_id, allowed_proyecto_ids=allowed, skip=skip, limit=limit)]
+    return [_to_response(db, v) for v in get_vehiculos(db, proyecto_id=proyecto_id, ruta_id=ruta_id, allowed_proyecto_ids=allowed, skip=skip, limit=limit)]
 
 
 @router.post("", response_model=VehiculoResponse, status_code=status.HTTP_201_CREATED)
