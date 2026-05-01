@@ -5,7 +5,7 @@ from pydantic import BaseModel, Field
 
 
 TipoTurno = Literal["matutino", "nocturno"]
-TipoHorario = Literal["entrada", "salida"]
+TipoHorario = Literal["entrada", "salida", "ambos"]
 
 
 class TurnoBase(BaseModel):

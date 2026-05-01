@@ -22,6 +22,7 @@ const TIPO_TURNO_OPTIONS = [
 const TIPO_HORARIO_OPTIONS = [
   { value: 'entrada', label: 'Entrada' },
   { value: 'salida', label: 'Salida' },
+  { value: 'ambos', label: 'Ambos' },
 ]
 
 const defaultForm = (proyectoId = '') => ({

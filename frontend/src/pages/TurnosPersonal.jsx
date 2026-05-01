@@ -48,6 +48,12 @@ const TurnosPersonal = () => {
   const [proyectos, setProyectos] = useState([])
   const [pasajeros, setPasajeros] = useState([])
   const [loadingPasajeros, setLoadingPasajeros] = useState(false)
+  /** Modal único para Procesar: idle | loading | success | error */
+  const [procesarModal, setProcesarModal] = useState({
+    open: false,
+    phase: 'idle',
+    importacionId: null,
+  })
   const [loading, setLoading] = useState(true)
   const [modalOpen, setModalOpen] = useState(false)
   const [editing, setEditing] = useState(null)
@@ -302,15 +308,29 @@ const TurnosPersonal = () => {
     }
   }
 
+  const resetProcesarModal = () => {
+    setProcesarModal({ open: false, phase: 'idle', importacionId: null })
+  }
+
+  const handleProcesarAceptar = () => {
+    if (procesarModal.phase === 'success' && procesarModal.importacionId) {
+      navigate(
+        `/demanda-viajes?horario_importacion_id=${encodeURIComponent(procesarModal.importacionId)}`
+      )
+    }
+    resetProcesarModal()
+  }
+
   const handleProcesarHorario = async () => {
     const id = horarioImportacionIdParam
     if (!id) return
+    setProcesarModal({ open: true, phase: 'loading', importacionId: id })
     try {
-      const { data } = await horariosService.procesarImportacion(id)
-      alert(data?.mensaje || 'Operación registrada')
-      navigate(`/demanda-viajes?horario_importacion_id=${encodeURIComponent(id)}`)
+      await horariosService.procesarImportacion(id)
+      setProcesarModal({ open: true, phase: 'success', importacionId: id })
     } catch (err) {
-      alert(getErrorMessage(err) || 'Error al procesar')
+      console.error(err)
+      setProcesarModal({ open: true, phase: 'error', importacionId: id })
     }
   }
 
@@ -324,6 +344,49 @@ const TurnosPersonal = () => {
 
   return (
     <>
+      {procesarModal.open && (
+        <div
+          className="fixed inset-0 z-[60] flex items-center justify-center bg-dark/50 backdrop-blur-sm p-4"
+          role="alertdialog"
+          aria-modal="true"
+          aria-busy={procesarModal.phase === 'loading'}
+          aria-labelledby="procesar-turnos-title"
+          aria-live="polite"
+        >
+          <div className="relative w-full max-w-md rounded-xl bg-white p-8 text-center shadow-card-hover">
+            {procesarModal.phase === 'loading' && (
+              <>
+                <div className="mb-4 flex justify-center">
+                  <Spinner size="lg" />
+                </div>
+                <p id="procesar-turnos-title" className="text-lg font-heading font-semibold text-primary">
+                  Procesando.....
+                </p>
+              </>
+            )}
+            {procesarModal.phase === 'success' && (
+              <>
+                <p id="procesar-turnos-title" className="text-lg font-heading font-semibold text-primary mb-6">
+                  Proceso completado con exito
+                </p>
+                <Button variant="accent" type="button" onClick={handleProcesarAceptar}>
+                  Aceptar
+                </Button>
+              </>
+            )}
+            {procesarModal.phase === 'error' && (
+              <>
+                <p id="procesar-turnos-title" className="text-lg font-heading font-semibold text-primary mb-6">
+                  Proceso fallido, intente nuevamente
+                </p>
+                <Button variant="accent" type="button" onClick={handleProcesarAceptar}>
+                  Aceptar
+                </Button>
+              </>
+            )}
+          </div>
+        </div>
+      )}
       <PageHeader
         title="Turnos Personal"
         description={

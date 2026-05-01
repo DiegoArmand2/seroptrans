@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Optional
+from typing import List, Optional
 
 from pydantic import BaseModel
 
@@ -8,6 +8,7 @@ class DemandaViajeResponse(BaseModel):
     demanda_viaje_id: str
     turno_id: str
     turno_nombre: Optional[str] = None
+    turno_codigo: Optional[str] = None
     proyecto_id: Optional[str] = None
     horario_importacion_id: Optional[str] = None
     pasajero_id: Optional[str] = None
@@ -29,3 +30,8 @@ class DemandaViajeResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class DemandaViajeListResponse(BaseModel):
+    items: List[DemandaViajeResponse]
+    total: int

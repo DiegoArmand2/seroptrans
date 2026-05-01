@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import Optional
 
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
@@ -6,8 +6,8 @@ from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.core.security import get_current_user_required
 from app.models.usuario import Usuario
-from app.schemas.demanda_viaje import DemandaViajeResponse
-from app.services.demanda_viaje_service import get_demanda_viajes
+from app.schemas.demanda_viaje import DemandaViajeListResponse, DemandaViajeResponse
+from app.services.demanda_viaje_service import count_demanda_viajes, get_demanda_viajes
 from app.services.permisos_service import get_user_proyectos
 
 router = APIRouter()
@@ -20,6 +20,7 @@ def _to_response(obj) -> DemandaViajeResponse:
         demanda_viaje_id=obj.demanda_viaje_id,
         turno_id=obj.turno_id,
         turno_nombre=t.nombre if t else None,
+        turno_codigo=t.codigo if t else None,
         proyecto_id=t.proyecto_id if t else None,
         horario_importacion_id=obj.horario_importacion_id,
         pasajero_id=obj.pasajero_id,
@@ -41,7 +42,7 @@ def _to_response(obj) -> DemandaViajeResponse:
     )
 
 
-@router.get("", response_model=List[DemandaViajeResponse])
+@router.get("", response_model=DemandaViajeListResponse)
 def list_demanda_viajes(
     proyecto_id: Optional[str] = None,
     horario_importacion_id: Optional[str] = None,
@@ -51,7 +52,13 @@ def list_demanda_viajes(
     current_user: Usuario = Depends(get_current_user_required),
 ):
     allowed = get_user_proyectos(db, current_user.usuario_id)
-    items = get_demanda_viajes(
+    total = count_demanda_viajes(
+        db,
+        proyecto_id=proyecto_id,
+        horario_importacion_id=horario_importacion_id,
+        allowed_proyecto_ids=allowed,
+    )
+    rows = get_demanda_viajes(
         db,
         proyecto_id=proyecto_id,
         horario_importacion_id=horario_importacion_id,
@@ -59,4 +66,7 @@ def list_demanda_viajes(
         skip=skip,
         limit=limit,
     )
-    return [_to_response(x) for x in items]
+    return DemandaViajeListResponse(
+        items=[_to_response(x) for x in rows],
+        total=total,
+    )
