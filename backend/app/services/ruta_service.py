@@ -1,5 +1,6 @@
 from typing import List, Optional
 
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.models.ruta import Ruta
@@ -8,6 +9,19 @@ from app.schemas.ruta import RutaCreate, RutaUpdate
 
 def get_ruta_by_id(db: Session, ruta_id: str) -> Optional[Ruta]:
     return db.query(Ruta).filter(Ruta.ruta_id == ruta_id).first()
+
+
+def get_rutas_by_nombre_y_proyecto(db: Session, proyecto_id: str, nombre: str) -> List[Ruta]:
+    """Rutas del proyecto cuyo nombre coincide sin distinguir mayúsculas (trim)."""
+    n = (nombre or "").strip()
+    if not n:
+        return []
+    return (
+        db.query(Ruta)
+        .filter(Ruta.proyecto_id == proyecto_id)
+        .filter(func.lower(Ruta.nombre) == n.lower())
+        .all()
+    )
 
 
 def get_rutas(

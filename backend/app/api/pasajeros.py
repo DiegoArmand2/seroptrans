@@ -16,7 +16,7 @@ from app.services.pasajero_service import (
     delete_pasajero,
 )
 from app.services.proyecto_service import get_proyecto_by_id
-from app.services.ruta_service import get_ruta_by_id
+from app.services.ruta_service import get_ruta_by_id, get_rutas_by_nombre_y_proyecto
 from app.services.tipo_pasajero_service import get_tipo_pasajero_by_id
 
 router = APIRouter()
@@ -38,6 +38,56 @@ def _to_response(db: Session, obj) -> PasajeroResponse:
         u = db.query(Usuario).filter(Usuario.usuario_id == obj.actualizado_por).first()
         d["actualizado_por_nombre"] = u.nombre_usuario if u else obj.actualizado_por
     return PasajeroResponse(**d)
+
+
+def _decode_uploaded_text(content: bytes) -> str:
+    """Decodifica CSV exportado como UTF-8 o como Excel regional (Windows-1252 / ISO-8859-1)."""
+    for encoding in ("utf-8-sig", "utf-8", "cp1252"):
+        try:
+            return content.decode(encoding)
+        except UnicodeDecodeError:
+            continue
+    return content.decode("latin-1")
+
+
+def _row_pick_str(row: dict, *header_names: str) -> Optional[str]:
+    lower = {str(k).strip().lower(): k for k in row if k is not None}
+    for name in header_names:
+        orig = lower.get(name.strip().lower())
+        if orig is None:
+            continue
+        v = row.get(orig)
+        if v is None:
+            continue
+        s = str(v).strip()
+        if s:
+            return s
+    return None
+
+
+def _resolve_ruta_id_for_import(db: Session, proyecto_id: str, row: dict) -> Optional[str]:
+    nombre_ruta = _row_pick_str(row, "ruta", "nombre_ruta", "ruta_nombre")
+    if nombre_ruta:
+        matches = get_rutas_by_nombre_y_proyecto(db, proyecto_id, nombre_ruta)
+        if not matches:
+            raise HTTPException(
+                status_code=400,
+                detail=f'Ruta no encontrada en el proyecto: "{nombre_ruta}"',
+            )
+        if len(matches) > 1:
+            raise HTTPException(
+                status_code=400,
+                detail=f'Varias rutas con el nombre "{nombre_ruta}" en el proyecto; use nombres únicos.',
+            )
+        return matches[0].ruta_id
+
+    rid = _row_pick_str(row, "ruta_id")
+    if rid:
+        r = get_ruta_by_id(db, rid)
+        if not r or r.proyecto_id != proyecto_id:
+            raise HTTPException(status_code=400, detail=f"ruta_id no válida o no pertenece al proyecto: {rid}")
+        return r.ruta_id
+    return None
 
 
 @router.get("", response_model=List[PasajeroResponse])
@@ -123,7 +173,7 @@ def importar_pasajeros(
     db: Session = Depends(get_db),
     current_user: Usuario = Depends(get_current_user_required),
 ):
-    """Importa pasajeros desde Excel o CSV. Columnas: cedula, nombre, direccion (opc), lat/latitud, lng/longitud (opc), contrasena (opc), ruta_id (opc), horario_habitual (opc), placa_asignada (opc)."""
+    """Importa pasajeros desde Excel o CSV. Columnas: cedula, nombre, direccion (opc), lat/latitud, lng/longitud (opc), contrasena (opc), ruta (nombre de ruta en el proyecto, opc), ruta_id (opc, legado), horario_habitual (opc), placa_asignada (opc)."""
     if not get_proyecto_by_id(db, proyecto_id):
         raise HTTPException(status_code=404, detail="Proyecto no encontrado")
     if not can_access_proyecto(db, current_user.usuario_id, proyecto_id):
@@ -133,7 +183,7 @@ def importar_pasajeros(
         import csv
         content = file.file.read()
         if file.filename and file.filename.lower().endswith(".csv"):
-            decoded = content.decode("utf-8-sig")
+            decoded = _decode_uploaded_text(content)
             reader = csv.DictReader(io.StringIO(decoded))
             rows = list(reader)
         else:
@@ -174,6 +224,7 @@ def importar_pasajeros(
             lat = _cell_decimal(row, "lat", "latitud")
             lng = _cell_decimal(row, "lng", "longitud", "lon")
             pw = row.get("contrasena", row.get("password", "")).strip() or None
+            ruta_id = _resolve_ruta_id_for_import(db, proyecto_id, row)
             create_pasajero(db, PasajeroCreate(
                 proyecto_id=proyecto_id,
                 cedula=cedula,
@@ -182,11 +233,13 @@ def importar_pasajeros(
                 lat=lat,
                 lng=lng,
                 contrasena=pw,
-                ruta_id=row.get("ruta_id", "").strip() or None,
+                ruta_id=ruta_id,
                 horario_habitual=row.get("horario_habitual", row.get("horario", "")).strip() or None,
                 placa_asignada=row.get("placa_asignada", row.get("placa", "")).strip() or None,
             ), creado_por_id=current_user.usuario_id)
             creados += 1
         return {"message": f"Importados {creados} pasajeros"}
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))

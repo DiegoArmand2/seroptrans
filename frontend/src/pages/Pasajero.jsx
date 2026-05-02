@@ -366,7 +366,7 @@ const Pasajero = () => {
       <Modal isOpen={importModalOpen} onClose={() => setImportModalOpen(false)} title="Importar pasajeros">
         <form onSubmit={handleImport} className="space-y-4">
           <p className="text-sm text-muted">
-            Columnas: cedula, nombre, direccion (opc), lat/latitud, lng/longitud (opc), contrasena (opc), ruta_id (opc), horario_habitual (opc), placa_asignada (opc)
+            Columnas: cedula, nombre, direccion (opc), lat/latitud, lng/longitud (opc), contrasena (opc), ruta (nombre de la ruta en el proyecto, opc), horario_habitual (opc), placa_asignada (opc). La columna ruta_id sigue admitida por compatibilidad.
           </p>
           <Select
             label="Proyecto"
