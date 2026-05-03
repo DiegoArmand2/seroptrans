@@ -3,7 +3,7 @@
  * value en minúsculas; el backend normaliza al guardar.
  */
 export const VENTANAS_PERMISO_OPTIONS = [
-  { value: 'dashboard', label: 'Dashboard' },
+  { value: 'reportes', label: 'Reportes' },
   { value: 'usuarios', label: 'Usuarios' },
   { value: 'roles', label: 'Roles' },
   { value: 'permisos', label: 'Permisos' },

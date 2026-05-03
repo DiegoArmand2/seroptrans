@@ -66,6 +66,7 @@ services:
       args:
         # Literal embebido en el build de Vite: el navegador del usuario debe poder abrir esta URL.
         VITE_API_URL: ${VITE_API_URL:-http://localhost:8000/api}
+        VITE_METABASE_DASHBOARD_URL: ${VITE_METABASE_DASHBOARD_URL:-}
     container_name: seroptrans_frontend
     restart: unless-stopped
     depends_on:

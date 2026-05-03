@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { NavLink, useNavigate, useLocation } from 'react-router-dom'
 import {
-  LayoutDashboard,
+  BarChart3,
   Users,
   Shield,
   Key,
@@ -28,7 +28,19 @@ import { useAuth } from '../../hooks/useAuth'
 import { usePermissions } from '../../hooks/usePermissions'
 
 const menuItems = [
-  { path: '/', icon: LayoutDashboard, label: 'Dashboard', ventana: 'dashboard' },
+  {
+    id: 'reportes',
+    label: 'Reportes',
+    icon: BarChart3,
+    children: [
+      {
+        path: '/reportes/logistica-operaciones',
+        icon: MapPinned,
+        label: 'Logística de Operaciones',
+        ventana: 'reportes',
+      },
+    ],
+  },
   {
     id: 'administracion',
     label: 'Administración',
@@ -69,6 +81,7 @@ const menuItems = [
 const Sidebar = ({ collapsed = false, onToggleCollapsed }) => {
   const [open, setOpen] = useState(false)
   const [expandedMenus, setExpandedMenus] = useState({
+    reportes: true,
     administracion: true,
     'datos-maestros': true,
     logistica: true,

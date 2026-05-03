@@ -45,7 +45,7 @@ def seed():
         db.commit()
 
         ventanas = [
-            "dashboard", "usuarios", "roles", "permisos",
+            "reportes", "usuarios", "roles", "permisos",
             "proyecto", "turno", "tipo_pasajero", "tipo_vehiculo", "pasajero", "conductor", "vehiculo", "ruta", "horarios",
             "turnos_personal",
             "demanda_viajes",

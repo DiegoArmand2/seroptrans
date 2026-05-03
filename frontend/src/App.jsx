@@ -4,7 +4,7 @@ import { AuthProvider } from './hooks/useAuth'
 import ProtectedRoute from './components/ProtectedRoute'
 import MainLayout from './components/layout/MainLayout'
 import Login from './pages/Login'
-import Dashboard from './pages/Dashboard'
+import LogisticaOperaciones from './pages/LogisticaOperaciones'
 import Usuarios from './pages/Usuarios'
 import Roles from './pages/Roles'
 import Permisos from './pages/Permisos'
@@ -42,7 +42,14 @@ function App() {
               </ProtectedRoute>
             }
           >
-            <Route index element={<Dashboard />} />
+            <Route
+              index
+              element={<Navigate to="/reportes/logistica-operaciones" replace />}
+            />
+            <Route
+              path="reportes/logistica-operaciones"
+              element={<LogisticaOperaciones />}
+            />
             <Route path="usuarios" element={<Usuarios />} />
             <Route path="roles" element={<Roles />} />
             <Route path="permisos" element={<Permisos />} />

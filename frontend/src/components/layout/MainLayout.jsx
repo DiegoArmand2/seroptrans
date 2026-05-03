@@ -13,7 +13,8 @@ const MainLayout = () => {
   const isWideGridPage =
     location.pathname.startsWith('/horarios') ||
     location.pathname.startsWith('/turnos-personal') ||
-    location.pathname.startsWith('/demanda-viajes')
+    location.pathname.startsWith('/demanda-viajes') ||
+    location.pathname.startsWith('/reportes')
 
   useEffect(() => {
     try {

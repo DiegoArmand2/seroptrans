@@ -6,7 +6,7 @@ PROCESOS_PERMITIDOS = frozenset(
 
 VENTANAS_PERMITIDAS = frozenset(
     {
-        "dashboard",
+        "reportes",
         "usuarios",
         "roles",
         "permisos",
