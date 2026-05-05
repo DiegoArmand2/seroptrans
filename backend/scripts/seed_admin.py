@@ -52,7 +52,15 @@ def seed():
         ]
         for v in ventanas:
             db.add(RolPermisoVentana(rol_id=rol_admin.rol_id, ventana=v))
-        procesos = ["crear", "editar", "eliminar", "asignar", "confirmar_horario", "procesar_horario"]
+        procesos = [
+            "crear",
+            "editar",
+            "eliminar",
+            "asignar",
+            "confirmar_horario",
+            "procesar_horario",
+            "editar_turnos_personal_confirmado",
+        ]
         for p in procesos:
             db.add(RolPermisoProceso(rol_id=rol_admin.rol_id, proceso=p))
         db.commit()

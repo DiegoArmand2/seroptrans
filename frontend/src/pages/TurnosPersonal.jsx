@@ -40,6 +40,7 @@ const TurnosPersonal = () => {
   const navigate = useNavigate()
   const { selectedProyectoId } = useProject()
   const { hasProceso } = usePermissions()
+  const puedeEditarTurnosPersonalConfirmado = hasProceso('editar_turnos_personal_confirmado')
   const [searchParams] = useSearchParams()
   const horarioImportacionIdParam = (searchParams.get('horario_importacion_id') || '').trim()
 
@@ -280,8 +281,10 @@ const TurnosPersonal = () => {
 
   const proyectoLabel = (pid) => proyectos.find((p) => p.proyecto_id === pid)?.nombre || pid || '—'
 
-  const horarioContextLocked =
+  const importacionConfirmada =
     !!horarioImportacionIdParam && importacionDetail && (importacionDetail.estado || 'DR') === 'CO'
+
+  const horarioContextLocked = importacionConfirmada && !puedeEditarTurnosPersonalConfirmado
 
   const showConfirmarBtn =
     !!horarioImportacionIdParam &&
@@ -491,6 +494,11 @@ const TurnosPersonal = () => {
           {horarioContextLocked && (
             <p className="text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
               Este horario está confirmado: solo lectura.
+            </p>
+          )}
+          {importacionConfirmada && !horarioContextLocked && (
+            <p className="text-sm text-primary/90 bg-primary/5 border border-primary/15 rounded-lg px-3 py-2">
+              Horario confirmado. Puede modificar registros porque su rol incluye el permiso correspondiente.
             </p>
           )}
           <Select

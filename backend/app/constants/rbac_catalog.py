@@ -1,7 +1,15 @@
 """Valores permitidos para permisos RBAC (alineado con seed_admin y frontend)."""
 
 PROCESOS_PERMITIDOS = frozenset(
-    {"crear", "editar", "eliminar", "asignar", "confirmar_horario", "procesar_horario"}
+    {
+        "crear",
+        "editar",
+        "eliminar",
+        "asignar",
+        "confirmar_horario",
+        "procesar_horario",
+        "editar_turnos_personal_confirmado",
+    }
 )
 
 VENTANAS_PERMITIDAS = frozenset(

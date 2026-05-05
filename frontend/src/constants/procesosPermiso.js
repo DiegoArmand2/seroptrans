@@ -9,4 +9,8 @@ export const PROCESOS_PERMISO_OPTIONS = [
   { value: 'asignar', label: 'Asignar' },
   { value: 'confirmar_horario', label: 'Confirmar horario' },
   { value: 'procesar_horario', label: 'Procesar horario' },
+  {
+    value: 'editar_turnos_personal_confirmado',
+    label: 'Editar turnos personal (horario confirmado)',
+  },
 ]
