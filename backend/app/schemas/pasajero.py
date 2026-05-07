@@ -1,6 +1,6 @@
 from datetime import datetime
 from decimal import Decimal
-from typing import Optional
+from typing import List, Optional
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -89,3 +89,8 @@ class PasajeroResponse(PasajeroBase):
 
     class Config:
         from_attributes = True
+
+
+class PasajeroPagedResponse(BaseModel):
+    items: List[PasajeroResponse]
+    total: int

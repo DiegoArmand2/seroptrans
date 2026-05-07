@@ -11,6 +11,8 @@ class HorariosImportarRequest(BaseModel):
     anio: int = Field(..., ge=1900, le=2100)
     numero_semana: int = Field(..., ge=1, le=53)
     url: str = Field(..., min_length=1, max_length=8000)
+    # Si se envía, se reutiliza ese registro (borrador): actualiza datos y vuelve a llamar a n8n.
+    horario_importacion_id: Optional[str] = Field(None, max_length=32)
 
     @model_validator(mode="after")
     def validate_numero_semana_vs_anio(self):

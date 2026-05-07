@@ -6,11 +6,13 @@ from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.core.security import get_current_user_required
 from app.models.usuario import Usuario
-from app.schemas.pasajero import PasajeroCreate, PasajeroUpdate, PasajeroResponse
+from app.schemas.pasajero import PasajeroCreate, PasajeroPagedResponse, PasajeroUpdate, PasajeroResponse
 from app.services.permisos_service import get_user_proyectos, can_access_proyecto
 from app.services.pasajero_service import (
     get_pasajeros,
+    get_pasajeros_paged,
     get_pasajero_by_id,
+    get_pasajero_by_proyecto_y_cedula,
     create_pasajero,
     update_pasajero,
     delete_pasajero,
@@ -93,13 +95,45 @@ def _resolve_ruta_id_for_import(db: Session, proyecto_id: str, row: dict) -> Opt
 @router.get("", response_model=List[PasajeroResponse])
 def list_pasajeros(
     proyecto_id: Optional[str] = None,
+    q: Optional[str] = None,
     skip: int = 0,
     limit: int = 100,
     db: Session = Depends(get_db),
     current_user: Usuario = Depends(get_current_user_required),
 ):
     allowed = get_user_proyectos(db, current_user.usuario_id)
-    return [_to_response(db, p) for p in get_pasajeros(db, proyecto_id=proyecto_id, allowed_proyecto_ids=allowed, skip=skip, limit=limit)]
+    return [
+        _to_response(db, p)
+        for p in get_pasajeros(
+            db,
+            proyecto_id=proyecto_id,
+            allowed_proyecto_ids=allowed,
+            q=q,
+            skip=skip,
+            limit=limit,
+        )
+    ]
+
+
+@router.get("/paged", response_model=PasajeroPagedResponse)
+def list_pasajeros_paged(
+    proyecto_id: Optional[str] = None,
+    q: Optional[str] = None,
+    skip: int = 0,
+    limit: int = 25,
+    db: Session = Depends(get_db),
+    current_user: Usuario = Depends(get_current_user_required),
+):
+    allowed = get_user_proyectos(db, current_user.usuario_id)
+    items, total = get_pasajeros_paged(
+        db,
+        proyecto_id=proyecto_id,
+        allowed_proyecto_ids=allowed,
+        q=q,
+        skip=skip,
+        limit=limit,
+    )
+    return PasajeroPagedResponse(items=[_to_response(db, p) for p in items], total=total)
 
 
 @router.post("", response_model=PasajeroResponse, status_code=status.HTTP_201_CREATED)
@@ -214,31 +248,65 @@ def importar_pasajeros(
             return None
 
         creados = 0
+        actualizados = 0
         for row in rows:
             cedula = row.get("cedula", row.get("cédula", "")).strip()
             nombre = row.get("nombre", "").strip()
             if not cedula or not nombre:
                 continue
-            from app.schemas.pasajero import PasajeroCreate
 
             lat = _cell_decimal(row, "lat", "latitud")
             lng = _cell_decimal(row, "lng", "longitud", "lon")
             pw = row.get("contrasena", row.get("password", "")).strip() or None
             ruta_id = _resolve_ruta_id_for_import(db, proyecto_id, row)
-            create_pasajero(db, PasajeroCreate(
-                proyecto_id=proyecto_id,
-                cedula=cedula,
-                nombre=nombre,
-                direccion=row.get("direccion", row.get("dirección", "")).strip() or None,
-                lat=lat,
-                lng=lng,
-                contrasena=pw,
-                ruta_id=ruta_id,
-                horario_habitual=row.get("horario_habitual", row.get("horario", "")).strip() or None,
-                placa_asignada=row.get("placa_asignada", row.get("placa", "")).strip() or None,
-            ), creado_por_id=current_user.usuario_id)
-            creados += 1
-        return {"message": f"Importados {creados} pasajeros"}
+            direccion = row.get("direccion", row.get("dirección", "")).strip() or None
+            horario_habitual = row.get("horario_habitual", row.get("horario", "")).strip() or None
+            placa_asignada = row.get("placa_asignada", row.get("placa", "")).strip() or None
+
+            existente = get_pasajero_by_proyecto_y_cedula(db, proyecto_id, cedula)
+            if existente:
+                upd_kwargs = {
+                    "nombre": nombre,
+                    "direccion": direccion,
+                    "lat": lat,
+                    "lng": lng,
+                    "ruta_id": ruta_id,
+                    "horario_habitual": horario_habitual,
+                    "placa_asignada": placa_asignada,
+                }
+                if pw:
+                    upd_kwargs["contrasena"] = pw
+                update_pasajero(
+                    db,
+                    existente.pasajero_id,
+                    PasajeroUpdate(**upd_kwargs),
+                    actualizado_por_id=current_user.usuario_id,
+                )
+                actualizados += 1
+            else:
+                create_pasajero(
+                    db,
+                    PasajeroCreate(
+                        proyecto_id=proyecto_id,
+                        cedula=cedula,
+                        nombre=nombre,
+                        direccion=direccion,
+                        lat=lat,
+                        lng=lng,
+                        contrasena=pw,
+                        ruta_id=ruta_id,
+                        horario_habitual=horario_habitual,
+                        placa_asignada=placa_asignada,
+                    ),
+                    creado_por_id=current_user.usuario_id,
+                )
+                creados += 1
+        total = creados + actualizados
+        return {
+            "message": f"Procesados {total} filas: {creados} nuevo(s), {actualizados} actualizado(s).",
+            "creados": creados,
+            "actualizados": actualizados,
+        }
     except HTTPException:
         raise
     except Exception as e:

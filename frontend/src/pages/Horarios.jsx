@@ -43,6 +43,7 @@ const Horarios = () => {
   const [editingImport, setEditingImport] = useState(null)
   const [editForm, setEditForm] = useState({ anio: anioEnCurso, numero_semana: '1', url: '' })
   const [editSubmitting, setEditSubmitting] = useState(false)
+  const [editImporting, setEditImporting] = useState(false)
   const [editUploadingFile, setEditUploadingFile] = useState(false)
   const editFileInputRef = useRef(null)
 
@@ -212,6 +213,43 @@ const Horarios = () => {
       alert(getErrorMessage(err) || 'Error al guardar')
     } finally {
       setEditSubmitting(false)
+    }
+  }
+
+  const handleEditImportar = async () => {
+    if (!editingImport) return
+    const w = Number(editForm.numero_semana)
+    const anio = Number(editForm.anio)
+    if (!Number.isFinite(anio) || !Number.isFinite(w) || w < 1 || w > maxSemanasEdit) {
+      alert('Indique año y número de semana válidos')
+      return
+    }
+    const urlTrim = String(editForm.url || '').trim()
+    if (!urlTrim) {
+      alert('Indique la URL del archivo o súbalo desde su equipo')
+      return
+    }
+    setEditImporting(true)
+    try {
+      const { data } = await horariosService.importar({
+        proyecto_id: editingImport.proyecto_id,
+        anio,
+        numero_semana: w,
+        url: urlTrim,
+        horario_importacion_id: editingImport.horario_importacion_id,
+      })
+      await loadData()
+      closeEditModal()
+      if (data?.code === 200 && data?.horario_importacion_id) {
+        navigate(`/turnos-personal?horario_importacion_id=${encodeURIComponent(data.horario_importacion_id)}`)
+      } else {
+        const msg = [data?.title, data?.msg].filter(Boolean).join('\n') || 'Importación enviada.'
+        alert(msg)
+      }
+    } catch (err) {
+      alert(getErrorMessage(err) || 'Error al importar')
+    } finally {
+      setEditImporting(false)
     }
   }
 
@@ -475,26 +513,57 @@ const Horarios = () => {
                 disabled={editUploadingFile}
                 onClick={() => editFileInputRef.current?.click()}
               >
-                {editUploadingFile ? 'Subiendo…' : 'Cargar archivo Excel'}
+                {editUploadingFile ? 'Subiendo…' : 'Cargar archivo Excel (.xls / .xlsx)'}
               </Button>
+              <p className="text-xs text-muted mt-2">
+                El archivo se guarda en el servidor y se rellena la URL automáticamente. n8n debe poder abrir esa URL (si
+                hace falta, configure <code className="text-primary/80">PUBLIC_BASE_URL</code> en el backend).
+              </p>
             </div>
           </div>
+          <p className="text-xs text-muted">
+            El botón Importar archivo envía al webhook de n8n el JSON{' '}
+            <code className="text-primary/80 text-[11px]">
+              {`{ "id_proyecto": "<uuid>", "url": "<ubicación del archivo>", "horario_id": "<uuid>", "anio": 2026, "semana": 17 }`}
+            </code>{' '}
+            (proyecto de este registro y campo URL). En edición se reutiliza el mismo <code className="text-primary/80 text-[11px]">horario_id</code>.{' '}
+            <span className="block mt-1">
+              Use <span className="font-medium text-primary/90">Solo guardar</span> (abajo) si solo desea actualizar año, semana o URL sin llamar a n8n.
+            </span>
+          </p>
+          <Button
+            type="button"
+            variant="accent"
+            disabled={
+              editImporting ||
+              editSubmitting ||
+              editUploadingFile ||
+              !String(editForm.url || '').trim() ||
+              editForm.numero_semana === '' ||
+              !Number.isFinite(Number(editForm.numero_semana))
+            }
+            onClick={handleEditImportar}
+          >
+            {editImporting ? 'Importando…' : 'Importar archivo'}
+          </Button>
+
           <div className="flex justify-end gap-2 pt-4">
             <Button type="button" variant="outline" onClick={closeEditModal}>
               Cancelar
             </Button>
             <Button
               type="submit"
-              variant="accent"
+              variant="outline"
               disabled={
                 editSubmitting ||
+                editImporting ||
                 editUploadingFile ||
                 !String(editForm.url || '').trim() ||
                 editForm.numero_semana === '' ||
                 !Number.isFinite(Number(editForm.numero_semana))
               }
             >
-              {editSubmitting ? 'Guardando…' : 'Guardar'}
+              {editSubmitting ? 'Guardando…' : 'Solo guardar'}
             </Button>
           </div>
         </form>

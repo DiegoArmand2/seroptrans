@@ -9,9 +9,9 @@ import Input from '../components/ui/Input'
 import Select from '../components/ui/Select'
 import Spinner from '../components/ui/Spinner'
 import AuditoriaSection from '../components/ui/AuditoriaSection'
+import PasajeroSearchSelect from '../components/ui/PasajeroSearchSelect'
 import { turnosPersonalService } from '../services/turnosPersonal.service'
 import { proyectosService } from '../services/proyectos.service'
-import { pasajerosService } from '../services/pasajeros.service'
 import { horariosService } from '../services/horarios.service'
 import { useProject } from '../contexts/ProjectContext'
 import { usePermissions } from '../hooks/usePermissions'
@@ -47,8 +47,6 @@ const TurnosPersonal = () => {
   const [importacionDetail, setImportacionDetail] = useState(null)
   const [rows, setRows] = useState([])
   const [proyectos, setProyectos] = useState([])
-  const [pasajeros, setPasajeros] = useState([])
-  const [loadingPasajeros, setLoadingPasajeros] = useState(false)
   /** Modal único para Procesar: idle | loading | success | error */
   const [procesarModal, setProcesarModal] = useState({
     open: false,
@@ -81,19 +79,6 @@ const TurnosPersonal = () => {
       ])
       setRows(rowsRes.data || [])
       setProyectos(proyRes.data || [])
-
-      // Opcional: cargar pasajeros solo si hay un proyecto en contexto
-      const pid = selectedProyectoId || (rowsRes.data?.[0]?.proyecto_id || '')
-      if (pid) {
-        try {
-          const { data } = await pasajerosService.list({ proyecto_id: pid })
-          setPasajeros(data || [])
-        } catch {
-          setPasajeros([])
-        }
-      } else {
-        setPasajeros([])
-      }
     } catch (err) {
       console.error(err)
       setRows([])
@@ -101,23 +86,6 @@ const TurnosPersonal = () => {
       setLoading(false)
     }
   }, [selectedProyectoId, horarioImportacionIdParam])
-
-  const fetchPasajeros = useCallback(async (proyectoId) => {
-    const pid = (proyectoId || '').trim()
-    if (!pid) {
-      setPasajeros([])
-      return
-    }
-    setLoadingPasajeros(true)
-    try {
-      const { data } = await pasajerosService.list({ proyecto_id: pid })
-      setPasajeros(data || [])
-    } catch {
-      setPasajeros([])
-    } finally {
-      setLoadingPasajeros(false)
-    }
-  }, [])
 
   useEffect(() => {
     loadData()
@@ -159,11 +127,6 @@ const TurnosPersonal = () => {
     [proyectos]
   )
 
-  const pasajeroOptions = useMemo(
-    () => pasajeros.map((p) => ({ value: p.pasajero_id, label: `${p.nombre} (${p.cedula || '—'})` })),
-    [pasajeros]
-  )
-
   const openCreate = () => {
     setEditing(null)
     setEditingFull(null)
@@ -175,7 +138,6 @@ const TurnosPersonal = () => {
       })
     )
     setModalOpen(true)
-    fetchPasajeros(proyectoId)
   }
 
   const openEdit = async (row) => {
@@ -188,12 +150,10 @@ const TurnosPersonal = () => {
       })
     )
     setModalOpen(true)
-    fetchPasajeros(row.proyecto_id)
     try {
       const { data } = await turnosPersonalService.get(row.turno_personal_id)
       setEditingFull(data)
       setForm(emptyForm({ ...data, pasajero_id: data.pasajero_id || '' }))
-      fetchPasajeros(data.proyecto_id)
     } catch {
       setEditingFull(row)
     }
@@ -508,7 +468,6 @@ const TurnosPersonal = () => {
             onChange={(e) => {
               const pid = e.target.value
               setForm((f) => ({ ...f, proyecto_id: pid, pasajero_id: '' }))
-              fetchPasajeros(pid)
             }}
             disabled={!!editing || !!selectedProyectoId || horarioContextLocked}
             required
@@ -521,13 +480,12 @@ const TurnosPersonal = () => {
             placeholder="horario_importacion_id"
             required
           />
-          <Select
+          <PasajeroSearchSelect
             label="Pasajero"
-            options={pasajeroOptions}
+            proyectoId={form.proyecto_id || selectedProyectoId || ''}
             value={form.pasajero_id}
-            onChange={(e) => {
-              const pasajeroId = e.target.value
-              const p = pasajeros.find((x) => x.pasajero_id === pasajeroId) || null
+            onChange={(p) => {
+              const pasajeroId = p?.pasajero_id || ''
               setForm((f) => ({
                 ...f,
                 pasajero_id: pasajeroId,
@@ -536,8 +494,7 @@ const TurnosPersonal = () => {
                 funcionarios: p?.nombre || '',
               }))
             }}
-            disabled={horarioContextLocked || !(form.proyecto_id || selectedProyectoId) || loadingPasajeros}
-            placeholder="Seleccionar pasajero"
+            disabled={horarioContextLocked}
             required
           />
 
@@ -574,7 +531,7 @@ const TurnosPersonal = () => {
             <Button
               type="submit"
               variant="accent"
-              disabled={horarioContextLocked || loadingPasajeros || !form.pasajero_id?.trim()}
+              disabled={horarioContextLocked || !form.pasajero_id?.trim()}
             >
               {editing ? 'Guardar' : 'Crear'}
             </Button>

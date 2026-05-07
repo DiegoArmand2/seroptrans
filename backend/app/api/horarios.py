@@ -93,7 +93,26 @@ def importar_horarios(
 
     webhook = (settings.N8N_HORARIOS_WEBHOOK_URL or "").strip() or DEFAULT_N8N_HORARIOS_WEBHOOK_URL
 
-    row = create_importacion(db, body, current_user.usuario_id)
+    reimport_id = (body.horario_importacion_id or "").strip() if body.horario_importacion_id else ""
+    if reimport_id:
+        row = get_importacion_by_id(db, reimport_id)
+        if not row or not can_access_proyecto(db, current_user.usuario_id, row.proyecto_id):
+            raise HTTPException(status_code=404, detail="Importación no encontrada")
+        if row.proyecto_id != body.proyecto_id:
+            raise HTTPException(status_code=400, detail="El proyecto no coincide con la importación")
+        try:
+            row = update_importacion_datos(
+                db,
+                row,
+                anio=body.anio,
+                numero_semana=body.numero_semana,
+                url_archivo=body.url.strip(),
+                usuario_id=current_user.usuario_id,
+            )
+        except ValueError as e:
+            raise HTTPException(status_code=409, detail=str(e))
+    else:
+        row = create_importacion(db, body, current_user.usuario_id)
 
     n8n_body, transport_err = call_n8n_horarios_webhook(
         webhook,

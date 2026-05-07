@@ -2,6 +2,7 @@ import api from './api'
 
 export const pasajerosService = {
   list: (params) => api.get('/pasajeros', { params }),
+  paged: (params) => api.get('/pasajeros/paged', { params }),
   get: (id) => api.get(`/pasajeros/${id}`),
   create: (data) => api.post('/pasajeros', data),
   update: (id, data) => api.put(`/pasajeros/${id}`, data),

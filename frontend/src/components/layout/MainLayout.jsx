@@ -14,7 +14,8 @@ const MainLayout = () => {
     location.pathname.startsWith('/horarios') ||
     location.pathname.startsWith('/turnos-personal') ||
     location.pathname.startsWith('/demanda-viajes') ||
-    location.pathname.startsWith('/reportes')
+    location.pathname.startsWith('/reportes') ||
+    location.pathname.startsWith('/pasajero')
 
   useEffect(() => {
     try {
