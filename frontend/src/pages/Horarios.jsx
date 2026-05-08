@@ -10,6 +10,7 @@ import Select from '../components/ui/Select'
 import Spinner from '../components/ui/Spinner'
 import { horariosService } from '../services/horarios.service'
 import { useProject } from '../contexts/ProjectContext'
+import { usePermissions } from '../hooks/usePermissions'
 import { getErrorMessage } from '../utils/apiError'
 import {
   isoWeekRangeLabel,
@@ -28,6 +29,8 @@ const Horarios = () => {
   const navigate = useNavigate()
   const anioEnCurso = new Date().getFullYear()
   const { selectedProyectoId, proyectos, loading: proyectosLoading } = useProject()
+  const { hasProceso } = usePermissions()
+  const puedeEditarHorariosConfirmados = hasProceso('editar_horarios_confirmados')
   const [importaciones, setImportaciones] = useState([])
   const [loading, setLoading] = useState(true)
   const [modalOpen, setModalOpen] = useState(false)
@@ -50,6 +53,31 @@ const Horarios = () => {
   const maxSemanas = useMemo(() => isoWeeksInIsoYear(anioEnCurso), [anioEnCurso])
   const maxSemanasEdit = useMemo(() => isoWeeksInIsoYear(Number(editForm.anio) || anioEnCurso), [editForm.anio, anioEnCurso])
 
+  function paginationRange(pageIndex, pageCount) {
+    if (pageCount <= 9) {
+      return Array.from({ length: pageCount }, (_, i) => i)
+    }
+    const delta = 2
+    const range = []
+    for (let i = 0; i < pageCount; i += 1) {
+      if (i === 0 || i === pageCount - 1 || (i >= pageIndex - delta && i <= pageIndex + delta)) {
+        range.push(i)
+      }
+    }
+    const out = []
+    let prev = -2
+    for (const i of range) {
+      if (prev >= 0 && i - prev > 1) out.push('gap')
+      out.push(i)
+      prev = i
+    }
+    return out
+  }
+
+  const PAGE_SIZE_OPTIONS = [10, 25, 50, 100]
+  const [pageSize, setPageSize] = useState(10)
+  const [pageIndex, setPageIndex] = useState(0)
+
   const loadData = useCallback(async () => {
     setLoading(true)
     try {
@@ -69,6 +97,10 @@ const Horarios = () => {
       loadData()
     }
   }, [proyectosLoading, loadData])
+
+  useEffect(() => {
+    setPageIndex(0)
+  }, [importaciones, selectedProyectoId])
 
   const openCreate = () => {
     setModalProyectoId(selectedProyectoId || '')
@@ -127,7 +159,8 @@ const Horarios = () => {
   }
 
   const openEditImportacion = async (row) => {
-    if ((row.estado || 'DR') === 'CO') return
+    const confirmado = (row.estado || 'DR') === 'CO'
+    if (confirmado && !puedeEditarHorariosConfirmados) return
     setEditingImport(row)
     setEditForm({
       anio: row.anio ?? anioEnCurso,
@@ -314,6 +347,13 @@ const Horarios = () => {
     )
   }
 
+  const total = importaciones.length
+  const pageCount = Math.max(1, Math.ceil(total / pageSize))
+  const safePageIndex = Math.min(pageIndex, pageCount - 1)
+  const pagedRows = importaciones.slice(safePageIndex * pageSize, safePageIndex * pageSize + pageSize)
+  const fromIdx = total === 0 ? 0 : safePageIndex * pageSize + 1
+  const toIdx = Math.min((safePageIndex + 1) * pageSize, total)
+
   return (
     <>
       <PageHeader
@@ -331,49 +371,73 @@ const Horarios = () => {
       />
 
       <Card>
+        <div className="flex flex-col gap-3 lg:flex-row lg:flex-wrap lg:items-center lg:justify-between mb-3 text-sm">
+          <div className="flex flex-wrap items-center gap-2">
+            <label className="flex items-center gap-2 text-muted whitespace-nowrap">
+              <span>Mostrar</span>
+              <select
+                className="border border-primary/15 rounded-md px-2 py-1.5 bg-bg text-fg focus:outline-none focus:ring-2 focus:ring-primary/30"
+                value={pageSize}
+                onChange={(e) => {
+                  const n = Number(e.target.value)
+                  setPageSize(n)
+                  setPageIndex(0)
+                }}
+              >
+                {PAGE_SIZE_OPTIONS.map((n) => (
+                  <option key={n} value={n}>
+                    {n}
+                  </option>
+                ))}
+              </select>
+              <span>registros</span>
+            </label>
+          </div>
+        </div>
         <div className="overflow-x-auto">
-          <table className="w-full">
+          <div className="overflow-x-auto border border-primary/10 rounded-md">
+            <table className="w-full text-sm border-collapse">
             <thead>
-              <tr className="border-b border-primary/10">
-                <th className="text-left py-3 px-4 font-heading text-primary font-semibold">Proyecto</th>
-                <th className="text-left py-3 px-4 font-heading text-primary font-semibold">Año</th>
-                <th className="text-left py-3 px-4 font-heading text-primary font-semibold">Número de semana</th>
-                <th className="text-left py-3 px-4 font-heading text-primary font-semibold">Estado</th>
-                <th className="text-left py-3 px-4 font-heading text-primary font-semibold">Título</th>
-                <th className="text-left py-3 px-4 font-heading text-primary font-semibold">Código</th>
-                <th className="text-left py-3 px-4 font-heading text-primary font-semibold">Registro</th>
-                <th className="text-left py-3 px-4 font-heading text-primary font-semibold">URL</th>
-                <th className="text-left py-3 px-4 font-heading text-primary font-semibold">Turnos personal</th>
-                <th className="text-left py-3 px-4 font-heading text-primary font-semibold">Ver viajes</th>
-                <th className="text-right py-3 px-4 font-heading text-primary font-semibold">Acciones</th>
+              <tr className="bg-primary/5 border-b border-primary/15">
+                <th className="text-left py-2 px-2 font-heading text-primary font-semibold border-b border-primary/10 whitespace-nowrap">Proyecto</th>
+                <th className="text-left py-2 px-2 font-heading text-primary font-semibold border-b border-primary/10 whitespace-nowrap">Año</th>
+                <th className="text-left py-2 px-2 font-heading text-primary font-semibold border-b border-primary/10 whitespace-nowrap">Número de semana</th>
+                <th className="text-left py-2 px-2 font-heading text-primary font-semibold border-b border-primary/10 whitespace-nowrap">Estado</th>
+                <th className="text-left py-2 px-2 font-heading text-primary font-semibold border-b border-primary/10 whitespace-nowrap">Título</th>
+                <th className="text-left py-2 px-2 font-heading text-primary font-semibold border-b border-primary/10 whitespace-nowrap">Código</th>
+                <th className="text-left py-2 px-2 font-heading text-primary font-semibold border-b border-primary/10 whitespace-nowrap">Registro</th>
+                <th className="text-left py-2 px-2 font-heading text-primary font-semibold border-b border-primary/10 whitespace-nowrap">URL</th>
+                <th className="text-left py-2 px-2 font-heading text-primary font-semibold border-b border-primary/10 whitespace-nowrap">Turnos personal</th>
+                <th className="text-left py-2 px-2 font-heading text-primary font-semibold border-b border-primary/10 whitespace-nowrap">Ver viajes</th>
+                <th className="text-right py-2 px-2 font-heading text-primary font-semibold border-b border-primary/10 whitespace-nowrap">Acciones</th>
               </tr>
             </thead>
             <tbody>
               {importaciones.length === 0 && (
                 <tr>
-                  <td colSpan={11} className="py-12 text-center text-muted">
+                  <td colSpan={11} className="py-12 text-center text-muted border-t border-primary/5">
                     {selectedProyectoId ? 'No hay importaciones en este proyecto' : 'No hay importaciones'}
                   </td>
                 </tr>
               )}
-              {importaciones.map((row) => {
+              {pagedRows.map((row) => {
                 const lunesIso =
                   row.anio != null && row.numero_semana != null
                     ? mondayOfIsoWeekAsLocalDateString(row.anio, row.numero_semana)
                     : ''
                 const confirmado = (row.estado || 'DR') === 'CO'
                 return (
-                <tr key={row.horario_importacion_id} className="border-b border-primary/5 hover:bg-primary/5">
-                  <td className="py-3 px-4">
+                <tr key={row.horario_importacion_id} className="border-b border-primary/10 hover:bg-primary/5">
+                  <td className="py-2 px-2 align-middle whitespace-nowrap max-w-[16rem] truncate">
                     {proyectos.find((p) => p.proyecto_id === row.proyecto_id)?.nombre || row.proyecto_id}
                   </td>
-                  <td className="py-3 px-4 tabular-nums" title={lunesIso ? `Lunes ISO: ${lunesIso}` : ''}>
+                  <td className="py-2 px-2 align-middle whitespace-nowrap tabular-nums" title={lunesIso ? `Lunes ISO: ${lunesIso}` : ''}>
                     {row.anio ?? '—'}
                   </td>
-                  <td className="py-3 px-4 tabular-nums" title={lunesIso ? `Lunes ISO: ${lunesIso}` : ''}>
+                  <td className="py-2 px-2 align-middle whitespace-nowrap tabular-nums" title={lunesIso ? `Lunes ISO: ${lunesIso}` : ''}>
                     {row.numero_semana ?? '—'}
                   </td>
-                  <td className="py-3 px-4">
+                  <td className="py-2 px-2 align-middle whitespace-nowrap">
                     <span
                       className={`inline-block px-2 py-0.5 rounded text-xs ${
                         confirmado ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-900'
@@ -382,20 +446,20 @@ const Horarios = () => {
                       {confirmado ? 'Confirmado' : 'Borrador'}
                     </span>
                   </td>
-                  <td className="py-3 px-4 text-muted max-w-[200px] truncate" title={row.respuesta_title}>
+                  <td className="py-2 px-2 align-middle text-muted max-w-[200px] truncate" title={row.respuesta_title}>
                     {row.respuesta_title ?? '—'}
                   </td>
-                  <td className="py-3 px-4">{row.respuesta_code ?? '—'}</td>
-                  <td className="py-3 px-4 text-muted whitespace-nowrap text-sm">
+                  <td className="py-2 px-2 align-middle whitespace-nowrap">{row.respuesta_code ?? '—'}</td>
+                  <td className="py-2 px-2 align-middle text-muted whitespace-nowrap">
                     {row.fecha_creacion ? new Date(row.fecha_creacion).toLocaleString() : '—'}
                   </td>
-                  <td className="py-3 px-4 text-sm max-w-[240px] truncate" title={row.url_archivo}>
+                  <td className="py-2 px-2 align-middle max-w-[240px] truncate" title={row.url_archivo}>
                     {row.url_archivo}
                   </td>
-                  <td className="py-3 px-4">
+                  <td className="py-2 px-2 align-middle whitespace-nowrap">
                     <button
                       type="button"
-                      className="text-sm font-medium text-primary hover:underline"
+                      className="font-medium text-primary hover:underline"
                       onClick={() =>
                         navigate(
                           `/turnos-personal?horario_importacion_id=${encodeURIComponent(row.horario_importacion_id)}`
@@ -405,10 +469,10 @@ const Horarios = () => {
                       Ver turnos
                     </button>
                   </td>
-                  <td className="py-3 px-4">
+                  <td className="py-2 px-2 align-middle whitespace-nowrap">
                     <button
                       type="button"
-                      className="text-sm font-medium text-primary hover:underline"
+                      className="font-medium text-primary hover:underline"
                       onClick={() =>
                         navigate(
                           `/demanda-viajes?horario_importacion_id=${encodeURIComponent(row.horario_importacion_id)}`
@@ -418,7 +482,7 @@ const Horarios = () => {
                       Ver demanda
                     </button>
                   </td>
-                  <td className="py-3 px-4 text-right">
+                  <td className="py-2 px-2 align-middle text-right whitespace-nowrap">
                     <div className="flex justify-end gap-2">
                       <Button
                         variant="ghost"
@@ -426,7 +490,7 @@ const Horarios = () => {
                         icon={<Pencil className="w-4 h-4" />}
                         onClick={() => openEditImportacion(row)}
                         aria-label="Editar importación"
-                        disabled={confirmado}
+                        disabled={confirmado && !puedeEditarHorariosConfirmados}
                       />
                       <Button
                         variant="ghost"
@@ -442,12 +506,63 @@ const Horarios = () => {
                 )
               })}
             </tbody>
-          </table>
+            </table>
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between mt-3 text-sm text-muted">
+          <p>
+            Mostrando {fromIdx} a {toIdx} de {total} registro{total === 1 ? '' : 's'}
+          </p>
+          <div className="flex flex-wrap items-center gap-1 justify-end">
+            <button
+              type="button"
+              className="px-2 py-1 rounded border border-primary/15 hover:bg-primary/5 disabled:opacity-40 disabled:pointer-events-none"
+              onClick={() => setPageIndex((p) => Math.max(0, p - 1))}
+              disabled={safePageIndex <= 0}
+            >
+              Anterior
+            </button>
+            {pageCount > 1 &&
+              paginationRange(safePageIndex, pageCount).map((item, idx) =>
+                item === 'gap' ? (
+                  <span key={`gap-${idx}`} className="px-1">
+                    …
+                  </span>
+                ) : (
+                  <button
+                    key={item}
+                    type="button"
+                    className={`min-w-[2rem] px-2 py-1 rounded border ${
+                      safePageIndex === item
+                        ? 'border-primary bg-primary/10 text-primary font-semibold'
+                        : 'border-primary/15 hover:bg-primary/5'
+                    }`}
+                    onClick={() => setPageIndex(item)}
+                  >
+                    {item + 1}
+                  </button>
+                )
+              )}
+            <button
+              type="button"
+              className="px-2 py-1 rounded border border-primary/15 hover:bg-primary/5 disabled:opacity-40 disabled:pointer-events-none"
+              onClick={() => setPageIndex((p) => Math.min(pageCount - 1, p + 1))}
+              disabled={safePageIndex >= pageCount - 1}
+            >
+              Siguiente
+            </button>
+          </div>
         </div>
       </Card>
 
       <Modal isOpen={editModalOpen} onClose={closeEditModal} title="Editar importación" size="lg">
         <form onSubmit={handleEditSubmit} className="space-y-4">
+          {editingImport && (editingImport.estado || 'DR') === 'CO' && puedeEditarHorariosConfirmados && (
+            <p className="text-sm text-primary/90 bg-primary/5 border border-primary/15 rounded-lg px-3 py-2">
+              Horario confirmado. Puede editar la importación porque su rol incluye el permiso correspondiente.
+            </p>
+          )}
           <p className="text-sm text-muted">
             Proyecto:{' '}
             <span className="font-medium text-primary">

@@ -17,6 +17,29 @@ import { useProject } from '../contexts/ProjectContext'
 import { usePermissions } from '../hooks/usePermissions'
 import { getErrorMessage } from '../utils/apiError'
 
+function paginationRange(pageIndex, pageCount) {
+  if (pageCount <= 9) {
+    return Array.from({ length: pageCount }, (_, i) => i)
+  }
+  const delta = 2
+  const range = []
+  for (let i = 0; i < pageCount; i += 1) {
+    if (i === 0 || i === pageCount - 1 || (i >= pageIndex - delta && i <= pageIndex + delta)) {
+      range.push(i)
+    }
+  }
+  const out = []
+  let prev = -2
+  for (const i of range) {
+    if (prev >= 0 && i - prev > 1) out.push('gap')
+    out.push(i)
+    prev = i
+  }
+  return out
+}
+
+const PAGE_SIZE_OPTIONS = [10, 25, 50, 100]
+
 const emptyForm = (defaults = {}) => ({
   proyecto_id: defaults.proyecto_id || '',
   horario_importacion_id: defaults.horario_importacion_id || '',
@@ -47,6 +70,8 @@ const TurnosPersonal = () => {
   const [importacionDetail, setImportacionDetail] = useState(null)
   const [rows, setRows] = useState([])
   const [proyectos, setProyectos] = useState([])
+  const [pageSize, setPageSize] = useState(10)
+  const [pageIndex, setPageIndex] = useState(0)
   /** Modal único para Procesar: idle | loading | success | error */
   const [procesarModal, setProcesarModal] = useState({
     open: false,
@@ -90,6 +115,10 @@ const TurnosPersonal = () => {
   useEffect(() => {
     loadData()
   }, [loadData])
+
+  useEffect(() => {
+    setPageIndex(0)
+  }, [rows, selectedProyectoId, horarioImportacionIdParam])
 
   useEffect(() => {
     const id = horarioImportacionIdParam
@@ -305,6 +334,13 @@ const TurnosPersonal = () => {
     )
   }
 
+  const total = rows.length
+  const pageCount = Math.max(1, Math.ceil(total / pageSize))
+  const safePageIndex = Math.min(pageIndex, pageCount - 1)
+  const pagedRows = rows.slice(safePageIndex * pageSize, safePageIndex * pageSize + pageSize)
+  const fromIdx = total === 0 ? 0 : safePageIndex * pageSize + 1
+  const toIdx = Math.min((safePageIndex + 1) * pageSize, total)
+
   return (
     <>
       {procesarModal.open && (
@@ -381,50 +417,74 @@ const TurnosPersonal = () => {
       />
 
       <Card>
+        <div className="flex flex-col gap-3 lg:flex-row lg:flex-wrap lg:items-center lg:justify-between mb-3 text-sm">
+          <div className="flex flex-wrap items-center gap-2">
+            <label className="flex items-center gap-2 text-muted whitespace-nowrap">
+              <span>Mostrar</span>
+              <select
+                className="border border-primary/15 rounded-md px-2 py-1.5 bg-bg text-fg focus:outline-none focus:ring-2 focus:ring-primary/30"
+                value={pageSize}
+                onChange={(e) => {
+                  const n = Number(e.target.value)
+                  setPageSize(n)
+                  setPageIndex(0)
+                }}
+              >
+                {PAGE_SIZE_OPTIONS.map((n) => (
+                  <option key={n} value={n}>
+                    {n}
+                  </option>
+                ))}
+              </select>
+              <span>registros</span>
+            </label>
+          </div>
+        </div>
         <div className="overflow-x-auto">
-          <table className="w-full">
+          <div className="overflow-x-auto border border-primary/10 rounded-md">
+            <table className="w-full text-sm border-collapse">
             <thead>
-              <tr className="border-b border-primary/10">
-                <th className="text-left py-3 px-4 font-heading text-primary font-semibold">Proyecto</th>
-                <th className="text-left py-3 px-4 font-heading text-primary font-semibold">Empresa</th>
-                <th className="text-left py-3 px-4 font-heading text-primary font-semibold">Proceso</th>
-                <th className="text-left py-3 px-4 font-heading text-primary font-semibold">Cargo</th>
-                <th className="text-left py-3 px-4 font-heading text-primary font-semibold">RUT</th>
-                <th className="text-left py-3 px-4 font-heading text-primary font-semibold">Funcionarios</th>
-                <th className="text-left py-3 px-4 font-heading text-primary font-semibold">Lunes</th>
-                <th className="text-left py-3 px-4 font-heading text-primary font-semibold">Martes</th>
-                <th className="text-left py-3 px-4 font-heading text-primary font-semibold">Miércoles</th>
-                <th className="text-left py-3 px-4 font-heading text-primary font-semibold">Jueves</th>
-                <th className="text-left py-3 px-4 font-heading text-primary font-semibold">Viernes</th>
-                <th className="text-left py-3 px-4 font-heading text-primary font-semibold">Sábado</th>
-                <th className="text-left py-3 px-4 font-heading text-primary font-semibold">Domingo</th>
-                <th className="text-left py-3 px-4 font-heading text-primary font-semibold">Acciones</th>
+              <tr className="bg-primary/5 border-b border-primary/15">
+                <th className="text-left py-2 px-2 font-heading text-primary font-semibold border-b border-primary/10 whitespace-nowrap">Proyecto</th>
+                <th className="text-left py-2 px-2 font-heading text-primary font-semibold border-b border-primary/10 whitespace-nowrap">Empresa</th>
+                <th className="text-left py-2 px-2 font-heading text-primary font-semibold border-b border-primary/10 whitespace-nowrap">Proceso</th>
+                <th className="text-left py-2 px-2 font-heading text-primary font-semibold border-b border-primary/10 whitespace-nowrap">Cargo</th>
+                <th className="text-left py-2 px-2 font-heading text-primary font-semibold border-b border-primary/10 whitespace-nowrap">RUT</th>
+                <th className="text-left py-2 px-2 font-heading text-primary font-semibold border-b border-primary/10 whitespace-nowrap">Funcionarios</th>
+                <th className="text-left py-2 px-2 font-heading text-primary font-semibold border-b border-primary/10 whitespace-nowrap">Lunes</th>
+                <th className="text-left py-2 px-2 font-heading text-primary font-semibold border-b border-primary/10 whitespace-nowrap">Martes</th>
+                <th className="text-left py-2 px-2 font-heading text-primary font-semibold border-b border-primary/10 whitespace-nowrap">Miércoles</th>
+                <th className="text-left py-2 px-2 font-heading text-primary font-semibold border-b border-primary/10 whitespace-nowrap">Jueves</th>
+                <th className="text-left py-2 px-2 font-heading text-primary font-semibold border-b border-primary/10 whitespace-nowrap">Viernes</th>
+                <th className="text-left py-2 px-2 font-heading text-primary font-semibold border-b border-primary/10 whitespace-nowrap">Sábado</th>
+                <th className="text-left py-2 px-2 font-heading text-primary font-semibold border-b border-primary/10 whitespace-nowrap">Domingo</th>
+                <th className="text-left py-2 px-2 font-heading text-primary font-semibold border-b border-primary/10 whitespace-nowrap">Acciones</th>
               </tr>
             </thead>
             <tbody>
               {rows.length === 0 && (
                 <tr>
-                  <td colSpan={14} className="py-12 text-center text-muted">
+                  <td colSpan={14} className="py-12 text-center text-muted border-t border-primary/5">
                     No hay registros
                   </td>
                 </tr>
               )}
-              {rows.map((r) => (
-                <tr key={r.turno_personal_id} className="border-b border-primary/5 hover:bg-primary/5">
-                  <td className="py-3 px-4">{proyectoLabel(r.proyecto_id)}</td>
-                  <td className="py-3 px-4 text-muted">{r.empresa || '—'}</td>
-                  <td className="py-3 px-4 text-muted">{r.proceso || '—'}</td>
-                  <td className="py-3 px-4 text-muted">{r.cargo || '—'}</td>
-                  <td className="py-3 px-4 text-muted">{r.rut || '—'}</td>
-                  <td className="py-3 px-4 text-muted">{r.funcionarios || '—'}</td>
-                  <td className="py-3 px-4 text-muted">{r.dia_09 || '—'}</td>
-                  <td className="py-3 px-4 text-muted">{r.dia_10 || '—'}</td>
-                  <td className="py-3 px-4 text-muted">{r.dia_11 || '—'}</td>
-                  <td className="py-3 px-4 text-muted">{r.dia_12 || '—'}</td>
-                  <td className="py-3 px-4 text-muted">{r.dia_13 || '—'}</td>
-                  <td className="py-3 px-4 text-muted">{r.dia_14 || '—'}</td>
-                  <td className="py-3 px-4 text-muted">{r.dia_15 || '—'}</td>
-                  <td className="py-3 px-4 text-right">
+              {pagedRows.map((r) => (
+                <tr key={r.turno_personal_id} className="border-b border-primary/10 hover:bg-primary/5">
+                  <td className="py-2 px-2 align-middle whitespace-nowrap max-w-[16rem] truncate">{proyectoLabel(r.proyecto_id)}</td>
+                  <td className="py-2 px-2 align-middle text-muted whitespace-nowrap max-w-[16rem] truncate">{r.empresa || '—'}</td>
+                  <td className="py-2 px-2 align-middle text-muted whitespace-nowrap max-w-[16rem] truncate">{r.proceso || '—'}</td>
+                  <td className="py-2 px-2 align-middle text-muted whitespace-nowrap max-w-[16rem] truncate">{r.cargo || '—'}</td>
+                  <td className="py-2 px-2 align-middle text-muted whitespace-nowrap">{r.rut || '—'}</td>
+                  <td className="py-2 px-2 align-middle text-muted whitespace-nowrap max-w-[16rem] truncate">{r.funcionarios || '—'}</td>
+                  <td className="py-2 px-2 align-middle text-muted whitespace-nowrap">{r.dia_09 || '—'}</td>
+                  <td className="py-2 px-2 align-middle text-muted whitespace-nowrap">{r.dia_10 || '—'}</td>
+                  <td className="py-2 px-2 align-middle text-muted whitespace-nowrap">{r.dia_11 || '—'}</td>
+                  <td className="py-2 px-2 align-middle text-muted whitespace-nowrap">{r.dia_12 || '—'}</td>
+                  <td className="py-2 px-2 align-middle text-muted whitespace-nowrap">{r.dia_13 || '—'}</td>
+                  <td className="py-2 px-2 align-middle text-muted whitespace-nowrap">{r.dia_14 || '—'}</td>
+                  <td className="py-2 px-2 align-middle text-muted whitespace-nowrap">{r.dia_15 || '—'}</td>
+                  <td className="py-2 px-2 align-middle text-right whitespace-nowrap">
                     <div className="flex justify-end gap-2">
                       <Button
                         variant="ghost"
@@ -445,7 +505,53 @@ const TurnosPersonal = () => {
                 </tr>
               ))}
             </tbody>
-          </table>
+            </table>
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between mt-3 text-sm text-muted">
+          <p>
+            Mostrando {fromIdx} a {toIdx} de {total} registro{total === 1 ? '' : 's'}
+          </p>
+          <div className="flex flex-wrap items-center gap-1 justify-end">
+            <button
+              type="button"
+              className="px-2 py-1 rounded border border-primary/15 hover:bg-primary/5 disabled:opacity-40 disabled:pointer-events-none"
+              onClick={() => setPageIndex((p) => Math.max(0, p - 1))}
+              disabled={safePageIndex <= 0}
+            >
+              Anterior
+            </button>
+            {pageCount > 1 &&
+              paginationRange(safePageIndex, pageCount).map((item, idx) =>
+                item === 'gap' ? (
+                  <span key={`gap-${idx}`} className="px-1">
+                    …
+                  </span>
+                ) : (
+                  <button
+                    key={item}
+                    type="button"
+                    className={`min-w-[2rem] px-2 py-1 rounded border ${
+                      safePageIndex === item
+                        ? 'border-primary bg-primary/10 text-primary font-semibold'
+                        : 'border-primary/15 hover:bg-primary/5'
+                    }`}
+                    onClick={() => setPageIndex(item)}
+                  >
+                    {item + 1}
+                  </button>
+                )
+              )}
+            <button
+              type="button"
+              className="px-2 py-1 rounded border border-primary/15 hover:bg-primary/5 disabled:opacity-40 disabled:pointer-events-none"
+              onClick={() => setPageIndex((p) => Math.min(pageCount - 1, p + 1))}
+              disabled={safePageIndex >= pageCount - 1}
+            >
+              Siguiente
+            </button>
+          </div>
         </div>
       </Card>
 

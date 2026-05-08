@@ -42,6 +42,25 @@ from app.services.horario_archivo_upload import (
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
+PROCESO_EDITAR_HORARIOS_CONFIRMADOS = "editar_horarios_confirmados"
+
+
+def _assert_editable_si_confirmado(db: Session, usuario_id: str, horario_importacion_id: str) -> None:
+    """Bloquea edición de importaciones confirmadas salvo permiso explícito."""
+    hid = (horario_importacion_id or "").strip()
+    if not hid:
+        return
+    row = get_importacion_by_id(db, hid)
+    if row is None:
+        return
+    if (row.estado or "DR") != "CO":
+        return
+    if not has_proceso(db, usuario_id, PROCESO_EDITAR_HORARIOS_CONFIRMADOS):
+        raise HTTPException(
+            status_code=403,
+            detail="El horario está confirmado: no puede editar esta importación sin el permiso correspondiente.",
+        )
+
 
 def _media_type_por_sufijo(suffix: str) -> str:
     if suffix.lower() == ".xlsx":
@@ -100,6 +119,7 @@ def importar_horarios(
             raise HTTPException(status_code=404, detail="Importación no encontrada")
         if row.proyecto_id != body.proyecto_id:
             raise HTTPException(status_code=400, detail="El proyecto no coincide con la importación")
+        _assert_editable_si_confirmado(db, current_user.usuario_id, reimport_id)
         try:
             row = update_importacion_datos(
                 db,
@@ -187,6 +207,7 @@ def actualizar_importacion(
     row = get_importacion_by_id(db, horario_importacion_id)
     if not row or not can_access_proyecto(db, current_user.usuario_id, row.proyecto_id):
         raise HTTPException(status_code=404, detail="Importación no encontrada")
+    _assert_editable_si_confirmado(db, current_user.usuario_id, horario_importacion_id)
     updated = update_importacion_datos(
         db,
         row,

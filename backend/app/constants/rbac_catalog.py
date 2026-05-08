@@ -8,6 +8,7 @@ PROCESOS_PERMITIDOS = frozenset(
         "asignar",
         "confirmar_horario",
         "procesar_horario",
+        "editar_horarios_confirmados",
         "editar_turnos_personal_confirmado",
     }
 )
