@@ -29,6 +29,8 @@ export default defineConfig({
       '/api': {
         target: apiProxyTarget,
         changeOrigin: true,
+        // Misma magnitud que axios (importar horario → n8n puede tardar varios minutos)
+        timeout: 300000,
       },
     },
   },

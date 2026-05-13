@@ -1,7 +1,9 @@
+import { CRUD_LIST_FETCH_LIMIT } from '../constants/apiListLimits'
 import api from './api'
 
 export const turnosService = {
-  list: (params) => api.get('/turnos', { params }),
+  list: (params = {}) =>
+    api.get('/turnos', { params: { ...params, limit: params.limit ?? CRUD_LIST_FETCH_LIMIT } }),
   get: (id) => api.get(`/turnos/${id}`),
   create: (data) => api.post('/turnos', data),
   update: (id, data) => api.put(`/turnos/${id}`, data),

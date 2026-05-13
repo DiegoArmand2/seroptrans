@@ -7,6 +7,26 @@ from app.models.ruta import Ruta
 from app.schemas.ruta import RutaCreate, RutaUpdate
 
 
+def _ruta_codigo_punto_taken(
+    db: Session,
+    proyecto_id: str,
+    codigo: Optional[str],
+    punto_inicio: str,
+    exclude_ruta_id: Optional[str] = None,
+) -> bool:
+    if not codigo or not str(codigo).strip():
+        return False
+    c = str(codigo).strip()
+    q = db.query(Ruta).filter(
+        Ruta.proyecto_id == proyecto_id,
+        Ruta.codigo == c,
+        Ruta.punto_inicio == punto_inicio,
+    )
+    if exclude_ruta_id:
+        q = q.filter(Ruta.ruta_id != exclude_ruta_id)
+    return q.first() is not None
+
+
 def get_ruta_by_id(db: Session, ruta_id: str) -> Optional[Ruta]:
     return db.query(Ruta).filter(Ruta.ruta_id == ruta_id).first()
 
@@ -42,9 +62,15 @@ def get_rutas(
 
 
 def create_ruta(db: Session, ruta: RutaCreate, creado_por_id: Optional[str] = None) -> Ruta:
+    if _ruta_codigo_punto_taken(db, ruta.proyecto_id, ruta.codigo, ruta.punto_inicio):
+        raise ValueError(
+            "Ya existe una ruta con el mismo código y punto de inicio en este proyecto."
+        )
     db_ruta = Ruta(
         proyecto_id=ruta.proyecto_id,
         nombre=ruta.nombre,
+        codigo=ruta.codigo,
+        punto_inicio=ruta.punto_inicio,
         sector=ruta.sector,
         geocerca=ruta.geocerca,
         costo_base=ruta.costo_base,
@@ -63,6 +89,14 @@ def update_ruta(db: Session, ruta_id: str, ruta_update: RutaUpdate, actualizado_
     if not db_ruta:
         return None
     data = ruta_update.model_dump(exclude_unset=True)
+    next_codigo = data["codigo"] if "codigo" in data else db_ruta.codigo
+    next_punto = data["punto_inicio"] if "punto_inicio" in data else db_ruta.punto_inicio
+    if _ruta_codigo_punto_taken(
+        db, db_ruta.proyecto_id, next_codigo, next_punto, exclude_ruta_id=ruta_id
+    ):
+        raise ValueError(
+            "Ya existe una ruta con el mismo código y punto de inicio en este proyecto."
+        )
     for key, value in data.items():
         setattr(db_ruta, key, value)
     if actualizado_por_id is not None:

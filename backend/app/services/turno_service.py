@@ -6,6 +6,26 @@ from app.models.turno import Turno
 from app.schemas.turno import TurnoCreate, TurnoUpdate
 
 
+def _turno_codigo_punto_taken(
+    db: Session,
+    proyecto_id: str,
+    codigo: Optional[str],
+    punto_inicio: str,
+    exclude_turno_id: Optional[str] = None,
+) -> bool:
+    if not codigo or not str(codigo).strip():
+        return False
+    c = str(codigo).strip()
+    q = db.query(Turno).filter(
+        Turno.proyecto_id == proyecto_id,
+        Turno.codigo == c,
+        Turno.punto_inicio == punto_inicio,
+    )
+    if exclude_turno_id:
+        q = q.filter(Turno.turno_id != exclude_turno_id)
+    return q.first() is not None
+
+
 def get_turno_by_id(db: Session, turno_id: str) -> Optional[Turno]:
     return db.query(Turno).filter(Turno.turno_id == turno_id).first()
 
@@ -28,9 +48,16 @@ def get_turnos(
 
 
 def create_turno(db: Session, turno: TurnoCreate, creado_por_id: Optional[str] = None) -> Turno:
+    if _turno_codigo_punto_taken(
+        db, turno.proyecto_id, turno.codigo, turno.punto_inicio
+    ):
+        raise ValueError(
+            "Ya existe un turno con el mismo código y punto de inicio en este proyecto."
+        )
     db_turno = Turno(
         proyecto_id=turno.proyecto_id,
         codigo=turno.codigo,
+        punto_inicio=turno.punto_inicio,
         nombre=turno.nombre,
         descripcion=turno.descripcion,
         activo=turno.activo,
@@ -52,6 +79,14 @@ def update_turno(db: Session, turno_id: str, turno_update: TurnoUpdate, actualiz
     if not db_turno:
         return None
     data = turno_update.model_dump(exclude_unset=True)
+    next_codigo = data["codigo"] if "codigo" in data else db_turno.codigo
+    next_punto = data["punto_inicio"] if "punto_inicio" in data else db_turno.punto_inicio
+    if _turno_codigo_punto_taken(
+        db, db_turno.proyecto_id, next_codigo, next_punto, exclude_turno_id=turno_id
+    ):
+        raise ValueError(
+            "Ya existe un turno con el mismo código y punto de inicio en este proyecto."
+        )
     for key, value in data.items():
         setattr(db_turno, key, value)
     if actualizado_por_id is not None:

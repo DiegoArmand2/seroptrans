@@ -43,6 +43,8 @@ services:
       N8N_HORARIOS_WEBHOOK_URL: ${N8N_HORARIOS_WEBHOOK_URL:-https://n8nadm.admagentes.online/webhook/st_horarios}
       N8N_ROUTES1OF3_WEBHOOK_URL: ${N8N_ROUTES1OF3_WEBHOOK_URL:-https://n8nadm.admagentes.online/webhook/routes1of3}
       HORARIOS_UPLOAD_DIR: /app/uploads/horarios
+      # Máx. espera al webhook n8n (segundos); debe ser ≥ timeout del frontend (5 min = 300).
+      N8N_WEBHOOK_TIMEOUT_SECONDS: ${N8N_WEBHOOK_TIMEOUT_SECONDS:-300}
     ports:
       - "8000:8000"
     volumes:

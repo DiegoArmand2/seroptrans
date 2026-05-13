@@ -180,7 +180,7 @@ def historial_importaciones(
         db,
         proyecto_id=proyecto_id,
         allowed_proyecto_ids=allowed,
-        limit=min(limit, 200),
+        limit=min(limit, 5000),
     )
     return [HorarioImportacionListItem.model_validate(x) for x in items]
 

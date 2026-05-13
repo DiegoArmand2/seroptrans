@@ -50,7 +50,10 @@ def crear_ruta(
 ):
     if not can_access_proyecto(db, current_user.usuario_id, ruta.proyecto_id):
         raise HTTPException(status_code=404, detail="Proyecto no encontrado")
-    r = create_ruta(db, ruta, creado_por_id=current_user.usuario_id)
+    try:
+        r = create_ruta(db, ruta, creado_por_id=current_user.usuario_id)
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)) from e
     return _to_response(db, r)
 
 
@@ -78,7 +81,10 @@ def actualizar_ruta(
     r = get_ruta_by_id(db, ruta_id)
     if not r or not can_access_proyecto(db, current_user.usuario_id, r.proyecto_id):
         raise HTTPException(status_code=404, detail="Ruta no encontrada")
-    updated = update_ruta(db, ruta_id, ruta, actualizado_por_id=current_user.usuario_id)
+    try:
+        updated = update_ruta(db, ruta_id, ruta, actualizado_por_id=current_user.usuario_id)
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)) from e
     if not updated:
         raise HTTPException(status_code=404, detail="Ruta no encontrada")
     return _to_response(db, updated)

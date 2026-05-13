@@ -50,7 +50,10 @@ def crear_turno(
 ):
     if not can_access_proyecto(db, current_user.usuario_id, turno.proyecto_id):
         raise HTTPException(status_code=404, detail="Proyecto no encontrado")
-    t = create_turno(db, turno, creado_por_id=current_user.usuario_id)
+    try:
+        t = create_turno(db, turno, creado_por_id=current_user.usuario_id)
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)) from e
     return _to_response(db, t)
 
 
@@ -78,7 +81,10 @@ def actualizar_turno(
     t = get_turno_by_id(db, turno_id)
     if not t or not can_access_proyecto(db, current_user.usuario_id, t.proyecto_id):
         raise HTTPException(status_code=404, detail="Turno no encontrado")
-    updated = update_turno(db, turno_id, turno, actualizado_por_id=current_user.usuario_id)
+    try:
+        updated = update_turno(db, turno_id, turno, actualizado_por_id=current_user.usuario_id)
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)) from e
     if not updated:
         raise HTTPException(status_code=404, detail="Turno no encontrado")
     return _to_response(db, updated)

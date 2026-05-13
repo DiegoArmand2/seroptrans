@@ -24,6 +24,9 @@ class Settings(BaseSettings):
     # Ruta absoluta para uploads de horarios. En Docker usar /app/uploads/horarios (montado a volumen).
     # Vacío = usa backend/uploads/horarios relativo al repo.
     HORARIOS_UPLOAD_DIR: str = ""
+    # Tiempo máximo (segundos) esperando respuesta de los webhooks n8n (importar / procesar horarios).
+    # 5 minutos, alineado con el timeout del cliente (frontend axios).
+    N8N_WEBHOOK_TIMEOUT_SECONDS: float = 5 * 60
 
     class Config:
         env_file = ".env"

@@ -2,10 +2,25 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import 'leaflet/dist/leaflet.css'
 import '@geoman-io/leaflet-geoman-free/dist/leaflet-geoman.css'
 import L from 'leaflet'
+import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png'
+import markerIcon from 'leaflet/dist/images/marker-icon.png'
+import markerShadow from 'leaflet/dist/images/marker-shadow.png'
 import { MapContainer, TileLayer, useMap } from 'react-leaflet'
 import '@geoman-io/leaflet-geoman-free'
 import { ChevronDown, ChevronRight } from 'lucide-react'
-import { canonicalGeocercaString, validateGeocercaString } from '../../utils/geocerca'
+import {
+  canonicalGeocercaString,
+  normalizeToGeocercaFeature,
+  validateGeocercaString,
+} from '../../utils/geocerca'
+
+// Vite no resuelve las URLs por defecto de Leaflet; sin esto el marcador de dibujo se ve roto.
+delete L.Icon.Default.prototype._getIconUrl
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: markerIcon2x,
+  iconUrl: markerIcon,
+  shadowUrl: markerShadow,
+})
 
 /** Centro por defecto (Sudamérica); ajustable si el negocio concentra otra región */
 const DEFAULT_CENTER = [-9.19, -75.0]
@@ -13,6 +28,37 @@ const DEFAULT_ZOOM = 5
 
 const OSM_ATTRIB =
   '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+
+/** Primer vértice de la geometría GeoJSON como Leaflet [lat, lng] (fallback de vista). */
+function firstLeafletLatLngFromGeometry(g) {
+  if (!g || !Array.isArray(g.coordinates)) return null
+  if (g.type === 'Point' && g.coordinates.length >= 2) {
+    return [g.coordinates[1], g.coordinates[0]]
+  }
+  if (
+    g.type === 'MultiPoint' &&
+    g.coordinates.length > 0 &&
+    Array.isArray(g.coordinates[0]) &&
+    g.coordinates[0].length >= 2
+  ) {
+    const c = g.coordinates[0]
+    return [c[1], c[0]]
+  }
+  if (g.type === 'LineString' && g.coordinates.length > 0) {
+    const c = g.coordinates[0]
+    if (Array.isArray(c) && c.length >= 2) return [c[1], c[0]]
+  }
+  if (
+    g.type === 'MultiLineString' &&
+    g.coordinates.length > 0 &&
+    Array.isArray(g.coordinates[0]) &&
+    g.coordinates[0].length > 0
+  ) {
+    const c = g.coordinates[0][0]
+    if (Array.isArray(c) && c.length >= 2) return [c[1], c[0]]
+  }
+  return null
+}
 
 function GeomanInner({ value, onChange }) {
   const map = useMap()
@@ -56,6 +102,9 @@ function GeomanInner({ value, onChange }) {
       const b = gj.getBounds()
       if (b.isValid()) {
         map.fitBounds(b, { padding: [28, 28], maxZoom: 16 })
+      } else {
+        const latLng = firstLeafletLatLngFromGeometry(obj?.geometry)
+        if (latLng) map.setView(latLng, 14)
       }
     } catch {
       map.setView(DEFAULT_CENTER, DEFAULT_ZOOM)
@@ -69,10 +118,10 @@ function GeomanInner({ value, onChange }) {
 
     map.pm.addControls({
       position: 'topleft',
-      drawMarker: false,
+      drawMarker: true,
       drawCircle: false,
       drawCircleMarker: false,
-      drawPolyline: false,
+      drawPolyline: true,
       drawRectangle: false,
       drawText: false,
       rotateMode: false,
@@ -84,10 +133,36 @@ function GeomanInner({ value, onChange }) {
       oneBlock: false,
     })
 
-    const emitFromLayer = (layer) => {
+    const emitFromFg = () => {
       try {
-        const gj = layer.toGeoJSON()
-        const s = canonicalGeocercaString(JSON.stringify(gj))
+        const fgInner = fgRef.current
+        if (!fgInner || fgInner.getLayers().length === 0) {
+          lastAppliedRef.current = ''
+          if ((valueRef.current || '').trim() !== '') {
+            onChangeRef.current('')
+          }
+          return
+        }
+        const layer = fgInner.getLayers()[0]
+        const raw = layer.toGeoJSON()
+        const feature = normalizeToGeocercaFeature(raw)
+        if (!feature) {
+          lastAppliedRef.current = ''
+          if ((valueRef.current || '').trim() !== '') {
+            onChangeRef.current('')
+          }
+          return
+        }
+        const str = JSON.stringify(feature)
+        const err = validateGeocercaString(str)
+        if (err) {
+          lastAppliedRef.current = ''
+          if ((valueRef.current || '').trim() !== '') {
+            onChangeRef.current('')
+          }
+          return
+        }
+        const s = canonicalGeocercaString(str)
         if (!s) return
         lastAppliedRef.current = s
         const cur = canonicalGeocercaString(valueRef.current || '')
@@ -108,17 +183,22 @@ function GeomanInner({ value, onChange }) {
       fg.addLayer(e.layer)
       if (e.layer.pm) e.layer.pm.enable()
       programmaticRef.current = false
-      emitFromLayer(e.layer)
+      emitFromFg()
     }
 
-    const onUpdate = (e) => {
-      emitFromLayer(e.layer)
+    const onUpdate = () => {
+      emitFromFg()
     }
 
     const onRemove = () => {
       if (programmaticRef.current) return
-      lastAppliedRef.current = ''
-      onChangeRef.current('')
+      const fgInner = fgRef.current
+      if (!fgInner || fgInner.getLayers().length === 0) {
+        lastAppliedRef.current = ''
+        onChangeRef.current('')
+        return
+      }
+      emitFromFg()
     }
 
     map.on('pm:create', onCreate)
@@ -152,7 +232,20 @@ function GeomanInner({ value, onChange }) {
       if (fg && fg.getLayers().length > 0) {
         try {
           const b = fg.getBounds()
-          if (b.isValid()) map.fitBounds(b, { padding: [28, 28], maxZoom: 16 })
+          if (b.isValid()) {
+            map.fitBounds(b, { padding: [28, 28], maxZoom: 16 })
+          } else {
+            const n = (value || '').trim() ? canonicalGeocercaString(value) : ''
+            if (n) {
+              try {
+                const o = JSON.parse(n)
+                const latLng = firstLeafletLatLngFromGeometry(o?.geometry)
+                if (latLng) map.setView(latLng, 14)
+              } catch {
+                /* noop */
+              }
+            }
+          }
         } catch {
           /* noop */
         }
@@ -195,10 +288,11 @@ function GeocercaEditor({ value, onChange, instanceKey = 'default' }) {
   return (
     <div className="w-full space-y-2">
       <label className="block text-sm font-medium text-primary mb-1.5">
-        Geocerca (polígono en mapa)
+        Geocerca (mapa)
       </label>
       <p className="text-xs text-muted -mt-1 mb-2">
-        Dibuje un polígono o pegue un GeoJSON Feature (Polygon / MultiPolygon).
+        Dibuje polígono, polilínea o marcador, o pegue un GeoJSON Feature: Polygon, MultiPolygon, Point,
+        MultiPoint, LineString o MultiLineString.
       </p>
       <div
         className="rounded-lg border-2 border-primary/20 overflow-hidden z-0 min-h-[420px] h-[min(58vh,640px)]"
@@ -236,7 +330,7 @@ function GeocercaEditor({ value, onChange, instanceKey = 'default' }) {
                 if (jsonError) setJsonError('')
               }}
               onBlur={handleJsonBlur}
-              placeholder='{"type":"Feature","properties":{},"geometry":{"type":"Polygon","coordinates":[...]}}'
+              placeholder='{"type":"Feature","properties":{},"geometry":{"type":"LineString","coordinates":[[-75,-9.2],[-74.5,-9.1]]}}'
               spellCheck={false}
             />
             {jsonError ? <p className="mt-1 text-sm text-red-600">{jsonError}</p> : null}

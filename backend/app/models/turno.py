@@ -16,6 +16,7 @@ class Turno(Base, AuditMixin):
     turno_id = Column(String(32), primary_key=True, default=generate_uuid_hex)
     proyecto_id = Column(String(32), ForeignKey("proyecto.proyecto_id", ondelete="CASCADE"), nullable=False)
     codigo = Column(String(20), nullable=True)
+    punto_inicio = Column(String(30), nullable=False, default="domicilio")
     nombre = Column(String(60), nullable=False)  # mañana, noche
     descripcion = Column(String(200), nullable=True)
     activo = Column(Boolean, default=True, nullable=False)

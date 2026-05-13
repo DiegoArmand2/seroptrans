@@ -15,11 +15,14 @@ import { getErrorMessage } from '../utils/apiError'
 import { validateGeocercaString } from '../utils/geocerca'
 import GeocercaEditor from '../components/ruta/GeocercaEditor'
 
-const TIPOS = [
-  { value: 'diurna', label: 'Diurna' },
-  { value: 'nocturna', label: 'Nocturna' },
-  { value: 'ambas', label: 'Ambas' },
+const PUNTO_INICIO_OPTIONS = [
+  { value: 'domicilio', label: 'Domicilio' },
+  { value: 'punto_encuentro', label: 'Punto de encuentro' },
 ]
+
+function puntoInicioLabel(v) {
+  return PUNTO_INICIO_OPTIONS.find((o) => o.value === v)?.label || '—'
+}
 
 const Ruta = () => {
   const { selectedProyectoId } = useProject()
@@ -32,6 +35,8 @@ const Ruta = () => {
   const [form, setForm] = useState({
     proyecto_id: '',
     nombre: '',
+    codigo: '',
+    punto_inicio: 'domicilio',
     sector: '',
     geocerca: '',
     costo_base: '',
@@ -60,7 +65,17 @@ const Ruta = () => {
   const openCreate = () => {
     setEditing(null)
     setEditingFull(null)
-    setForm({ proyecto_id: selectedProyectoId || '', nombre: '', sector: '', geocerca: '', costo_base: '', tipo: 'diurna', activo: true })
+    setForm({
+      proyecto_id: selectedProyectoId || '',
+      nombre: '',
+      codigo: '',
+      punto_inicio: 'domicilio',
+      sector: '',
+      geocerca: '',
+      costo_base: '',
+      tipo: 'diurna',
+      activo: true,
+    })
     setModalOpen(true)
   }
 
@@ -70,6 +85,8 @@ const Ruta = () => {
     setForm({
       proyecto_id: r.proyecto_id,
       nombre: r.nombre,
+      codigo: r.codigo ?? '',
+      punto_inicio: r.punto_inicio || 'domicilio',
       sector: r.sector || '',
       geocerca: r.geocerca || '',
       costo_base: r.costo_base ?? '',
@@ -82,6 +99,8 @@ const Ruta = () => {
       setForm({
         proyecto_id: data.proyecto_id,
         nombre: data.nombre,
+        codigo: data.codigo ?? '',
+        punto_inicio: data.punto_inicio || 'domicilio',
         sector: data.sector || '',
         geocerca: data.geocerca || '',
         costo_base: data.costo_base ?? '',
@@ -102,6 +121,7 @@ const Ruta = () => {
     }
     try {
       const payload = { ...form }
+      payload.codigo = (payload.codigo && String(payload.codigo).trim()) || null
       if (typeof payload.geocerca === 'string' && !payload.geocerca.trim()) {
         payload.geocerca = ''
       }
@@ -151,6 +171,8 @@ const Ruta = () => {
               <tr className="border-b border-primary/10">
                 <th className="text-left py-3 px-4 font-heading text-primary font-semibold">Proyecto</th>
                 <th className="text-left py-3 px-4 font-heading text-primary font-semibold">Nombre</th>
+                <th className="text-left py-3 px-4 font-heading text-primary font-semibold">Código</th>
+                <th className="text-left py-3 px-4 font-heading text-primary font-semibold">Punto de inicio</th>
                 <th className="text-left py-3 px-4 font-heading text-primary font-semibold">Sector</th>
                 <th className="text-center py-3 px-4 font-heading text-primary font-semibold" title="Geocerca definida">
                   Geo
@@ -163,7 +185,7 @@ const Ruta = () => {
             <tbody>
               {rutas.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="py-12 text-center text-muted">
+                  <td colSpan={9} className="py-12 text-center text-muted">
                     {selectedProyectoId ? 'No hay rutas en este proyecto' : 'No hay rutas'}
                   </td>
                 </tr>
@@ -172,6 +194,8 @@ const Ruta = () => {
                 <tr key={r.ruta_id} className="border-b border-primary/5 hover:bg-primary/5">
                   <td className="py-3 px-4">{proyectos.find((p) => p.proyecto_id === r.proyecto_id)?.nombre || '-'}</td>
                   <td className="py-3 px-4">{r.nombre}</td>
+                  <td className="py-3 px-4 text-muted">{r.codigo || '—'}</td>
+                  <td className="py-3 px-4 text-muted">{puntoInicioLabel(r.punto_inicio)}</td>
                   <td className="py-3 px-4 text-muted">{r.sector || '—'}</td>
                   <td className="py-3 px-4 text-center text-muted">
                     {r.geocerca && String(r.geocerca).trim() ? (
@@ -208,9 +232,21 @@ const Ruta = () => {
                 required
               />
               <Input label="Nombre" value={form.nombre} onChange={(e) => setForm({ ...form, nombre: e.target.value })} required />
+              <Input
+                label="Código"
+                value={form.codigo}
+                onChange={(e) => setForm({ ...form, codigo: e.target.value })}
+                maxLength={50}
+                placeholder="Opcional; único por proyecto con punto de inicio"
+              />
+              <Select
+                label="Punto de inicio"
+                options={PUNTO_INICIO_OPTIONS}
+                value={form.punto_inicio}
+                onChange={(e) => setForm({ ...form, punto_inicio: e.target.value })}
+              />
               <Input label="Sector" value={form.sector} onChange={(e) => setForm({ ...form, sector: e.target.value })} />
               <Input label="Costo base" type="number" step="0.01" value={form.costo_base} onChange={(e) => setForm({ ...form, costo_base: e.target.value })} />
-              <Select label="Tipo" options={TIPOS} value={form.tipo} onChange={(e) => setForm({ ...form, tipo: e.target.value })} />
               <div className="flex items-center gap-2">
                 <input type="checkbox" id="activo" checked={form.activo} onChange={(e) => setForm({ ...form, activo: e.target.checked })} className="rounded w-4 h-4 accent-primary" />
                 <label htmlFor="activo" className="text-sm font-medium text-primary">Activo</label>

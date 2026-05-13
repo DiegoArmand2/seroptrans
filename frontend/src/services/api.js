@@ -15,9 +15,11 @@ function resolveBaseURL() {
   return '/api'
 }
 
+const API_TIMEOUT_MS = 5 * 60 * 1000 // 5 minutos
+
 const api = axios.create({
   baseURL: resolveBaseURL(),
-  timeout: 60000,
+  timeout: API_TIMEOUT_MS,
   headers: {
     'Content-Type': 'application/json',
   },

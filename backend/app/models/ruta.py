@@ -16,6 +16,8 @@ class Ruta(Base, AuditMixin):
     ruta_id = Column(String(32), primary_key=True, default=generate_uuid_hex)
     proyecto_id = Column(String(32), ForeignKey("proyecto.proyecto_id", ondelete="CASCADE"), nullable=False)
     nombre = Column(String(100), nullable=False)
+    codigo = Column(String(50), nullable=True)
+    punto_inicio = Column(String(30), nullable=False, default="domicilio")
     sector = Column(String(100), nullable=True)
     geocerca = Column(Text, nullable=True)  # GeoJSON o coordenadas
     costo_base = Column(Numeric(10, 2), nullable=True)

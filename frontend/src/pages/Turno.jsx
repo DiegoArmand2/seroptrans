@@ -25,6 +25,10 @@ const TIPO_HORARIO_OPTIONS = [
   { value: 'ambos', label: 'Ambos' },
 ]
 
+function tipoTurnoLabel(v) {
+  return TIPO_TURNO_OPTIONS.find((o) => o.value === v)?.label || v || '—'
+}
+
 const defaultForm = (proyectoId = '') => ({
   proyecto_id: proyectoId,
   codigo: '',
@@ -175,8 +179,6 @@ const Turno = () => {
       </div>
     )
   }
-
-  const tipoTurnoLabel = (v) => TIPO_TURNO_OPTIONS.find((o) => o.value === v)?.label || v || '—'
 
   return (
     <>

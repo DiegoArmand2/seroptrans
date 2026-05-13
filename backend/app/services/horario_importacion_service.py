@@ -4,6 +4,7 @@ from typing import Any, List, Optional, Tuple
 import httpx
 from sqlalchemy.orm import Session
 
+from app.core.config import settings
 from app.models.horario_importacion import HorarioImportacion
 
 ESTADO_BORRADOR = "DR"
@@ -40,7 +41,8 @@ def call_n8n_horarios_webhook(
 ) -> Tuple[Any, Optional[str]]:
     """POST al webhook n8n con cuerpo JSON ampliado para trazabilidad."""
     try:
-        with httpx.Client(timeout=120.0) as client:
+        n8n_timeout = float(settings.N8N_WEBHOOK_TIMEOUT_SECONDS)
+        with httpx.Client(timeout=n8n_timeout) as client:
             r = client.post(
                 webhook_url,
                 json={
@@ -74,7 +76,8 @@ def call_n8n_routes1of3_webhook(
 ) -> Tuple[Any, Optional[str]]:
     """POST al webhook n8n para procesar horarios (routes1of3)."""
     try:
-        with httpx.Client(timeout=120.0) as client:
+        n8n_timeout = float(settings.N8N_WEBHOOK_TIMEOUT_SECONDS)
+        with httpx.Client(timeout=n8n_timeout) as client:
             r = client.post(
                 webhook_url,
                 json={

@@ -1,16 +1,18 @@
 from datetime import datetime, time
-from typing import Literal, Optional
+from typing import Any, Literal, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 
-TipoTurno = Literal["matutino", "nocturno"]
+TipoTurno = Literal["matutino", "nocturno", "ambos"]
 TipoHorario = Literal["entrada", "salida", "ambos"]
+PuntoInicioTurno = Literal["domicilio", "punto_encuentro"]
 
 
 class TurnoBase(BaseModel):
     proyecto_id: str
     codigo: Optional[str] = Field(None, max_length=20)
+    punto_inicio: PuntoInicioTurno = "domicilio"
     nombre: str = Field(..., max_length=60)
     descripcion: Optional[str] = Field(None, max_length=200)
     activo: bool = True
@@ -20,6 +22,16 @@ class TurnoBase(BaseModel):
     tipo_horario: TipoHorario = "entrada"
     cambio_dia: bool = False
 
+    @field_validator("codigo", mode="before")
+    @classmethod
+    def normalize_codigo(cls, v: Any) -> Optional[str]:
+        if v is None:
+            return None
+        if isinstance(v, str):
+            s = v.strip()
+            return s if s else None
+        return v
+
 
 class TurnoCreate(TurnoBase):
     pass
@@ -27,6 +39,7 @@ class TurnoCreate(TurnoBase):
 
 class TurnoUpdate(BaseModel):
     codigo: Optional[str] = Field(None, max_length=20)
+    punto_inicio: Optional[PuntoInicioTurno] = None
     nombre: Optional[str] = Field(None, max_length=60)
     descripcion: Optional[str] = Field(None, max_length=200)
     activo: Optional[bool] = None
@@ -35,6 +48,16 @@ class TurnoUpdate(BaseModel):
     tipo_turno: Optional[TipoTurno] = None
     tipo_horario: Optional[TipoHorario] = None
     cambio_dia: Optional[bool] = None
+
+    @field_validator("codigo", mode="before")
+    @classmethod
+    def normalize_codigo(cls, v: Any) -> Optional[str]:
+        if v is None:
+            return None
+        if isinstance(v, str):
+            s = v.strip()
+            return s if s else None
+        return v
 
 
 class TurnoResponse(TurnoBase):
