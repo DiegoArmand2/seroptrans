@@ -9,6 +9,33 @@ from pydantic import BaseModel, Field, field_validator
 PuntoInicioRuta = Literal["domicilio", "punto_encuentro"]
 
 
+def _validate_lat(v: Any) -> Any:
+    if v is None:
+        return v
+    x = float(v)
+    if x < -90 or x > 90:
+        raise ValueError("La latitud debe estar entre -90 y 90")
+    return v
+
+
+def _validate_lng(v: Any) -> Any:
+    if v is None:
+        return v
+    x = float(v)
+    if x < -180 or x > 180:
+        raise ValueError("La longitud debe estar entre -180 y 180")
+    return v
+
+
+def _normalize_optional_str(v: Any) -> Optional[str]:
+    if v is None:
+        return None
+    if isinstance(v, str):
+        s = v.strip()
+        return s if s else None
+    return v
+
+
 def _is_lng_lat_pair(c: Any) -> bool:
     return (
         isinstance(c, list)
@@ -99,6 +126,13 @@ class RutaBase(BaseModel):
     nombre: str = Field(..., max_length=100)
     codigo: Optional[str] = Field(None, max_length=50)
     punto_inicio: PuntoInicioRuta = "domicilio"
+    punto_inicio_salida: PuntoInicioRuta = "domicilio"
+    origen_nombre: Optional[str] = Field(None, max_length=255)
+    origen_lat: Optional[Decimal] = None
+    origen_lng: Optional[Decimal] = None
+    destino_nombre: Optional[str] = Field(None, max_length=255)
+    destino_lat: Optional[Decimal] = None
+    destino_lng: Optional[Decimal] = None
     sector: Optional[str] = Field(None, max_length=100)
     geocerca: Optional[str] = None
     costo_base: Optional[Decimal] = None
@@ -108,12 +142,22 @@ class RutaBase(BaseModel):
     @field_validator("codigo", mode="before")
     @classmethod
     def normalize_codigo(cls, v: Any) -> Optional[str]:
-        if v is None:
-            return None
-        if isinstance(v, str):
-            s = v.strip()
-            return s if s else None
-        return v
+        return _normalize_optional_str(v)
+
+    @field_validator("origen_nombre", "destino_nombre", mode="before")
+    @classmethod
+    def normalize_nombre_geo(cls, v: Any) -> Optional[str]:
+        return _normalize_optional_str(v)
+
+    @field_validator("origen_lat", "destino_lat", mode="after")
+    @classmethod
+    def validate_lat(cls, v: Any) -> Any:
+        return _validate_lat(v)
+
+    @field_validator("origen_lng", "destino_lng", mode="after")
+    @classmethod
+    def validate_lng(cls, v: Any) -> Any:
+        return _validate_lng(v)
 
 
 class RutaCreate(RutaBase):
@@ -127,6 +171,13 @@ class RutaUpdate(BaseModel):
     nombre: Optional[str] = Field(None, max_length=100)
     codigo: Optional[str] = Field(None, max_length=50)
     punto_inicio: Optional[PuntoInicioRuta] = None
+    punto_inicio_salida: Optional[PuntoInicioRuta] = None
+    origen_nombre: Optional[str] = Field(None, max_length=255)
+    origen_lat: Optional[Decimal] = None
+    origen_lng: Optional[Decimal] = None
+    destino_nombre: Optional[str] = Field(None, max_length=255)
+    destino_lat: Optional[Decimal] = None
+    destino_lng: Optional[Decimal] = None
     sector: Optional[str] = Field(None, max_length=100)
     geocerca: Optional[str] = None
     costo_base: Optional[Decimal] = None
@@ -136,12 +187,22 @@ class RutaUpdate(BaseModel):
     @field_validator("codigo", mode="before")
     @classmethod
     def normalize_codigo(cls, v: Any) -> Optional[str]:
-        if v is None:
-            return None
-        if isinstance(v, str):
-            s = v.strip()
-            return s if s else None
-        return v
+        return _normalize_optional_str(v)
+
+    @field_validator("origen_nombre", "destino_nombre", mode="before")
+    @classmethod
+    def normalize_nombre_geo(cls, v: Any) -> Optional[str]:
+        return _normalize_optional_str(v)
+
+    @field_validator("origen_lat", "destino_lat", mode="after")
+    @classmethod
+    def validate_lat(cls, v: Any) -> Any:
+        return _validate_lat(v)
+
+    @field_validator("origen_lng", "destino_lng", mode="after")
+    @classmethod
+    def validate_lng(cls, v: Any) -> Any:
+        return _validate_lng(v)
 
     @field_validator("geocerca")
     @classmethod

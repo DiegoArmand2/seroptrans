@@ -21,6 +21,7 @@ const Conductor = () => {
   const [editingFull, setEditingFull] = useState(null)
   const [form, setForm] = useState({
     nombre: '',
+    license_number: '',
     disponible: true,
     activo: true,
     proyecto_id: '',
@@ -46,7 +47,7 @@ const Conductor = () => {
   const openCreate = () => {
     setEditing(null)
     setEditingFull(null)
-    setForm({ nombre: '', disponible: true, activo: true, proyecto_id: selectedProyectoId || '' })
+    setForm({ nombre: '', license_number: '', disponible: true, activo: true, proyecto_id: selectedProyectoId || '' })
     setModalOpen(true)
   }
 
@@ -55,6 +56,7 @@ const Conductor = () => {
     const proyectoId = c.proyecto_ids?.[0] || selectedProyectoId || ''
     setForm({
       nombre: c.nombre,
+      license_number: c.license_number ?? '',
       disponible: c.disponible ?? true,
       activo: c.activo ?? true,
       proyecto_id: proyectoId,
@@ -63,6 +65,13 @@ const Conductor = () => {
     try {
       const { data } = await conductoresService.get(c.conductor_id)
       setEditingFull(data)
+      setForm({
+        nombre: data.nombre,
+        license_number: data.license_number ?? '',
+        disponible: data.disponible ?? true,
+        activo: data.activo ?? true,
+        proyecto_id: proyectoId,
+      })
     } catch {
       setEditingFull(c)
     }
@@ -73,12 +82,22 @@ const Conductor = () => {
     const proyectoId = form.proyecto_id || selectedProyectoId
     try {
       if (editing) {
-        await conductoresService.update(editing.conductor_id, { nombre: form.nombre, disponible: form.disponible, activo: form.activo })
+        await conductoresService.update(editing.conductor_id, {
+          nombre: form.nombre,
+          license_number: String(form.license_number || '').trim() || null,
+          disponible: form.disponible,
+          activo: form.activo,
+        })
         if (proyectoId && !editing.proyecto_ids?.includes(proyectoId)) {
           await conductoresService.assignProyecto(editing.conductor_id, proyectoId)
         }
       } else {
-        const { data } = await conductoresService.create({ nombre: form.nombre, disponible: form.disponible, activo: form.activo })
+        const { data } = await conductoresService.create({
+          nombre: form.nombre,
+          license_number: String(form.license_number || '').trim() || null,
+          disponible: form.disponible,
+          activo: form.activo,
+        })
         if (proyectoId && data?.conductor_id) {
           await conductoresService.assignProyecto(data.conductor_id, proyectoId)
         }
@@ -129,6 +148,7 @@ const Conductor = () => {
               <tr className="border-b border-primary/10">
                 <th className="text-left py-3 px-4 font-heading text-primary font-semibold">Proyecto</th>
                 <th className="text-left py-3 px-4 font-heading text-primary font-semibold">Nombre</th>
+                <th className="text-left py-3 px-4 font-heading text-primary font-semibold">License number</th>
                 <th className="text-left py-3 px-4 font-heading text-primary font-semibold">Estado</th>
                 <th className="text-right py-3 px-4 font-heading text-primary font-semibold">Acciones</th>
               </tr>
@@ -136,7 +156,7 @@ const Conductor = () => {
             <tbody>
               {conductores.length === 0 && (
                 <tr>
-                  <td colSpan={4} className="py-12 text-center text-muted">
+                  <td colSpan={5} className="py-12 text-center text-muted">
                     {selectedProyectoId ? 'No hay conductores en este proyecto' : 'No hay conductores'}
                   </td>
                 </tr>
@@ -145,6 +165,7 @@ const Conductor = () => {
                 <tr key={c.conductor_id} className="border-b border-primary/5 hover:bg-primary/5">
                   <td className="py-3 px-4 text-muted">{c.proyecto_nombres?.length ? c.proyecto_nombres.join(', ') : '—'}</td>
                   <td className="py-3 px-4">{c.nombre}</td>
+                  <td className="py-3 px-4 text-muted">{c.license_number || '—'}</td>
                   <td className="py-3 px-4">
                     <span
                       className={`px-2 py-0.5 rounded text-xs ${
@@ -194,6 +215,12 @@ const Conductor = () => {
             value={form.nombre}
             onChange={(e) => setForm({ ...form, nombre: e.target.value })}
             required
+          />
+          <Input
+            label="License number"
+            value={form.license_number}
+            onChange={(e) => setForm({ ...form, license_number: e.target.value })}
+            maxLength={50}
           />
           <div className="flex items-center gap-2">
             <input

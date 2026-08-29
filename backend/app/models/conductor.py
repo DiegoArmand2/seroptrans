@@ -29,6 +29,7 @@ class Conductor(Base, AuditMixin):
 
     conductor_id = Column(String(32), primary_key=True, default=generate_uuid_hex)
     nombre = Column(String(100), nullable=False)
+    license_number = Column(String(50), nullable=True)
     disponible = Column(Boolean, default=True, nullable=False)
     activo = Column(Boolean, default=True, nullable=False)
 

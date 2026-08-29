@@ -18,6 +18,13 @@ class Ruta(Base, AuditMixin):
     nombre = Column(String(100), nullable=False)
     codigo = Column(String(50), nullable=True)
     punto_inicio = Column(String(30), nullable=False, default="domicilio")
+    punto_inicio_salida = Column(String(30), nullable=False, default="domicilio")
+    origen_nombre = Column(String(255), nullable=True)
+    origen_lat = Column(Numeric(10, 7), nullable=True)
+    origen_lng = Column(Numeric(10, 7), nullable=True)
+    destino_nombre = Column(String(255), nullable=True)
+    destino_lat = Column(Numeric(10, 7), nullable=True)
+    destino_lng = Column(Numeric(10, 7), nullable=True)
     sector = Column(String(100), nullable=True)
     geocerca = Column(Text, nullable=True)  # GeoJSON o coordenadas
     costo_base = Column(Numeric(10, 2), nullable=True)

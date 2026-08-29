@@ -208,14 +208,17 @@ def actualizar_importacion(
     if not row or not can_access_proyecto(db, current_user.usuario_id, row.proyecto_id):
         raise HTTPException(status_code=404, detail="Importación no encontrada")
     _assert_editable_si_confirmado(db, current_user.usuario_id, horario_importacion_id)
-    updated = update_importacion_datos(
-        db,
-        row,
-        anio=body.anio,
-        numero_semana=body.numero_semana,
-        url_archivo=body.url,
-        usuario_id=current_user.usuario_id,
-    )
+    try:
+        updated = update_importacion_datos(
+            db,
+            row,
+            anio=body.anio,
+            numero_semana=body.numero_semana,
+            url_archivo=body.url,
+            usuario_id=current_user.usuario_id,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=409, detail=str(e))
     return HorarioImportacionDetail.model_validate(updated)
 
 

@@ -58,6 +58,10 @@ def create_vehiculo(db: Session, vehiculo: VehiculoCreate, creado_por_id: Option
         ruta_id=vehiculo.ruta_id,
         proyecto_id=vehiculo.proyecto_id,
         tipo_vehiculo_id=vehiculo.tipo_vehiculo_id,
+        passwd=vehiculo.passwd,
+        rating=vehiculo.rating,
+        model=vehiculo.model,
+        color=vehiculo.color,
         activo=vehiculo.activo,
         creado_por=creado_por_id,
     )

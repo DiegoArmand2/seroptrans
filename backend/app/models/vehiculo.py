@@ -1,5 +1,5 @@
 import uuid
-from sqlalchemy import Column, String, Integer, Boolean, ForeignKey
+from sqlalchemy import Column, String, Integer, Boolean, ForeignKey, Numeric
 from sqlalchemy.orm import relationship
 
 from app.core.database import Base
@@ -21,6 +21,10 @@ class Vehiculo(Base, AuditMixin):
     ruta_id = Column(String(32), ForeignKey("ruta.ruta_id", ondelete="SET NULL"), nullable=True)
     proyecto_id = Column(String(32), ForeignKey("proyecto.proyecto_id", ondelete="CASCADE"), nullable=False)
     tipo_vehiculo_id = Column(String(32), ForeignKey("tipo_vehiculo.tipo_vehiculo_id", ondelete="SET NULL"), nullable=True)
+    passwd = Column(String(255), nullable=True)
+    rating = Column(Numeric(4, 2), nullable=True)
+    model = Column(String(100), nullable=True)
+    color = Column(String(50), nullable=True)
     activo = Column(Boolean, default=True, nullable=False)
 
     conductor = relationship("Conductor", back_populates="vehiculos")

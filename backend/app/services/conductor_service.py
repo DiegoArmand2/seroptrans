@@ -36,6 +36,7 @@ def get_conductores(
 def create_conductor(db: Session, conductor: ConductorCreate, creado_por_id: Optional[str] = None) -> Conductor:
     db_conductor = Conductor(
         nombre=conductor.nombre,
+        license_number=conductor.license_number,
         disponible=conductor.disponible,
         activo=conductor.activo,
         creado_por=creado_por_id,

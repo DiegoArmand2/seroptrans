@@ -32,6 +32,10 @@ const Vehiculo = () => {
     ruta_id: '',
     tipo_vehiculo_id: '',
     proyecto_id: '',
+    passwd: '',
+    rating: '',
+    model: '',
+    color: '',
     activo: true,
   })
 
@@ -88,6 +92,10 @@ const Vehiculo = () => {
       ruta_id: '',
       tipo_vehiculo_id: '',
       proyecto_id: selectedProyectoId || '',
+      passwd: '',
+      rating: '',
+      model: '',
+      color: '',
       activo: true,
     })
     setModalOpen(true)
@@ -102,12 +110,29 @@ const Vehiculo = () => {
       ruta_id: v.ruta_id || '',
       tipo_vehiculo_id: v.tipo_vehiculo_id || '',
       proyecto_id: v.proyecto_id || selectedProyectoId || '',
+      passwd: v.passwd ?? '',
+      rating: v.rating != null && v.rating !== '' ? String(v.rating) : '',
+      model: v.model ?? '',
+      color: v.color ?? '',
       activo: v.activo ?? true,
     })
     setModalOpen(true)
     try {
       const { data } = await vehiculosService.get(v.vehiculo_id)
       setEditingFull(data)
+      setForm({
+        placa: data.placa,
+        capacidad: data.capacidad ?? 16,
+        conductor_id: data.conductor_id || '',
+        ruta_id: data.ruta_id || '',
+        tipo_vehiculo_id: data.tipo_vehiculo_id || '',
+        proyecto_id: data.proyecto_id || selectedProyectoId || '',
+        passwd: data.passwd ?? '',
+        rating: data.rating != null && data.rating !== '' ? String(data.rating) : '',
+        model: data.model ?? '',
+        color: data.color ?? '',
+        activo: data.activo ?? true,
+      })
     } catch {
       setEditingFull(v)
     }
@@ -121,6 +146,12 @@ const Vehiculo = () => {
       return
     }
     try {
+      const ratingRaw = String(form.rating ?? '').trim().replace(',', '.')
+      const rating = ratingRaw === '' ? null : Number(ratingRaw)
+      if (ratingRaw !== '' && !Number.isFinite(rating)) {
+        alert('Rating debe ser un número válido')
+        return
+      }
       const payload = {
         placa: form.placa,
         capacidad: form.capacidad,
@@ -128,6 +159,10 @@ const Vehiculo = () => {
         ruta_id: form.ruta_id || null,
         tipo_vehiculo_id: form.tipo_vehiculo_id || null,
         proyecto_id: proyectoId,
+        passwd: String(form.passwd || '').trim() || null,
+        rating,
+        model: String(form.model || '').trim() || null,
+        color: String(form.color || '').trim() || null,
         activo: form.activo ?? true,
       }
       if (editing) {
@@ -195,6 +230,9 @@ const Vehiculo = () => {
                 <th className="text-left py-3 px-4 font-heading text-primary font-semibold">Conductor</th>
                 <th className="text-left py-3 px-4 font-heading text-primary font-semibold">Ruta</th>
                 <th className="text-left py-3 px-4 font-heading text-primary font-semibold">Tipo de vehículo</th>
+                <th className="text-left py-3 px-4 font-heading text-primary font-semibold">Model</th>
+                <th className="text-left py-3 px-4 font-heading text-primary font-semibold">Color</th>
+                <th className="text-left py-3 px-4 font-heading text-primary font-semibold">Rating</th>
                 <th className="text-left py-3 px-4 font-heading text-primary font-semibold">Estado</th>
                 <th className="text-right py-3 px-4 font-heading text-primary font-semibold">Acciones</th>
               </tr>
@@ -202,7 +240,7 @@ const Vehiculo = () => {
             <tbody>
               {vehiculos.length === 0 && (
                 <tr>
-                  <td colSpan={8} className="py-12 text-center text-muted">
+                  <td colSpan={11} className="py-12 text-center text-muted">
                     {selectedProyectoId ? 'No hay vehículos en este proyecto' : 'No hay vehículos. Haga clic en Nuevo vehículo para crear uno.'}
                   </td>
                 </tr>
@@ -215,6 +253,9 @@ const Vehiculo = () => {
                   <td className="py-3 px-4">{v.conductor_nombre || '—'}</td>
                   <td className="py-3 px-4">{v.ruta_nombre || '—'}</td>
                   <td className="py-3 px-4 text-muted">{v.tipo_vehiculo_nombre || '—'}</td>
+                  <td className="py-3 px-4 text-muted">{v.model || '—'}</td>
+                  <td className="py-3 px-4 text-muted">{v.color || '—'}</td>
+                  <td className="py-3 px-4 text-muted">{v.rating != null ? v.rating : '—'}</td>
                   <td className="py-3 px-4">
                     <span
                       className={`px-2 py-0.5 rounded text-xs ${
@@ -249,52 +290,87 @@ const Vehiculo = () => {
 
       <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} title={editing ? 'Editar vehículo' : 'Nuevo vehículo'}>
         <form onSubmit={handleSubmit} className="space-y-4">
-          <Select
-            label="Proyecto"
-            options={proyectoOptions}
-            value={form.proyecto_id || selectedProyectoId}
-            onChange={(e) =>
-              setForm({ ...form, proyecto_id: e.target.value, ruta_id: '', conductor_id: '', tipo_vehiculo_id: '' })
-            }
-            placeholder="Seleccionar proyecto"
-            disabled={!!editing || !!selectedProyectoId}
-            required
-          />
-          <Input
-            label="Placa"
-            value={form.placa}
-            onChange={(e) => setForm({ ...form, placa: e.target.value })}
-            required
-          />
-          <Input
-            label="Capacidad"
-            type="number"
-            min={1}
-            value={form.capacidad}
-            onChange={(e) => setForm({ ...form, capacidad: parseInt(e.target.value) || 16 })}
-          />
-          <Select
-            label="Conductor"
-            options={conductorOptions}
-            value={form.conductor_id}
-            onChange={(e) => setForm({ ...form, conductor_id: e.target.value })}
-            placeholder="Seleccionar conductor"
-          />
-          <Select
-            label="Ruta"
-            options={rutaOptions}
-            value={form.ruta_id}
-            onChange={(e) => setForm({ ...form, ruta_id: e.target.value })}
-            placeholder="Seleccionar ruta (opcional)"
-          />
-          <Select
-            label="Tipo de vehículo"
-            options={tipoVehiculoOptions}
-            value={form.tipo_vehiculo_id}
-            onChange={(e) => setForm({ ...form, tipo_vehiculo_id: e.target.value })}
-            placeholder="Seleccionar tipo (opcional)"
-          />
-          <div className="flex items-center gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-4">
+            <div className="sm:col-span-2">
+              <Select
+                label="Proyecto"
+                options={proyectoOptions}
+                value={form.proyecto_id || selectedProyectoId}
+                onChange={(e) =>
+                  setForm({ ...form, proyecto_id: e.target.value, ruta_id: '', conductor_id: '', tipo_vehiculo_id: '' })
+                }
+                placeholder="Seleccionar proyecto"
+                disabled={!!editing || !!selectedProyectoId}
+                required
+              />
+            </div>
+            <Input
+              label="Placa"
+              value={form.placa}
+              onChange={(e) => setForm({ ...form, placa: e.target.value })}
+              required
+            />
+            <Input
+              label="Capacidad"
+              type="number"
+              min={1}
+              value={form.capacidad}
+              onChange={(e) => setForm({ ...form, capacidad: parseInt(e.target.value) || 16 })}
+            />
+            <Input
+              label="Model"
+              value={form.model}
+              onChange={(e) => setForm({ ...form, model: e.target.value })}
+              maxLength={100}
+            />
+            <Input
+              label="Color"
+              value={form.color}
+              onChange={(e) => setForm({ ...form, color: e.target.value })}
+              maxLength={50}
+            />
+            <Input
+              label="Passwd"
+              type="password"
+              value={form.passwd}
+              onChange={(e) => setForm({ ...form, passwd: e.target.value })}
+              maxLength={255}
+              autoComplete="new-password"
+            />
+            <Input
+              label="Rating"
+              type="number"
+              min={0}
+              max={5}
+              step="0.01"
+              value={form.rating}
+              onChange={(e) => setForm({ ...form, rating: e.target.value })}
+              placeholder="0 - 5"
+            />
+            <Select
+              label="Conductor"
+              options={conductorOptions}
+              value={form.conductor_id}
+              onChange={(e) => setForm({ ...form, conductor_id: e.target.value })}
+              placeholder="Seleccionar conductor"
+            />
+            <Select
+              label="Ruta"
+              options={rutaOptions}
+              value={form.ruta_id}
+              onChange={(e) => setForm({ ...form, ruta_id: e.target.value })}
+              placeholder="Seleccionar ruta (opcional)"
+            />
+            <div className="sm:col-span-2">
+              <Select
+                label="Tipo de vehículo"
+                options={tipoVehiculoOptions}
+                value={form.tipo_vehiculo_id}
+                onChange={(e) => setForm({ ...form, tipo_vehiculo_id: e.target.value })}
+                placeholder="Seleccionar tipo (opcional)"
+              />
+            </div>
+            <div className="flex items-center gap-2 sm:col-span-2">
             <input
               type="checkbox"
               id="activo"
@@ -305,6 +381,7 @@ const Vehiculo = () => {
             <label htmlFor="activo" className="text-sm font-medium text-primary">
               Activo
             </label>
+            </div>
           </div>
           <AuditoriaSection data={editingFull} />
           <div className="flex justify-end gap-2 pt-4">

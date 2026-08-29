@@ -186,8 +186,7 @@ def update_importacion_datos(
     url_archivo: str,
     usuario_id: str,
 ) -> HorarioImportacion:
-    if (row.estado or ESTADO_BORRADOR) == ESTADO_CONFIRMADO:
-        raise ValueError("No se puede editar un horario confirmado")
+    # La autorización (p. ej. editar_horarios_confirmados) se valida en la capa API.
     row.anio = anio
     row.numero_semana = numero_semana
     row.url_archivo = url_archivo
