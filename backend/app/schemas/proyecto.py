@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, time
 from typing import Optional
 
 from pydantic import BaseModel, Field
@@ -8,6 +8,8 @@ class ProyectoBase(BaseModel):
     nombre: str = Field(..., max_length=100)
     descripcion: Optional[str] = Field(None, max_length=300)
     parametros_operativos: Optional[str] = None
+    rango_hora_desde: Optional[time] = None
+    rango_hora_hasta: Optional[time] = None
     activo: bool = True
 
 
@@ -19,6 +21,8 @@ class ProyectoUpdate(BaseModel):
     nombre: Optional[str] = Field(None, max_length=100)
     descripcion: Optional[str] = Field(None, max_length=300)
     parametros_operativos: Optional[str] = None
+    rango_hora_desde: Optional[time] = None
+    rango_hora_hasta: Optional[time] = None
     activo: Optional[bool] = None
 
 

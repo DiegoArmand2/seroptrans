@@ -1,5 +1,5 @@
 import uuid
-from sqlalchemy import Column, String, Boolean, Text
+from sqlalchemy import Column, String, Boolean, Text, Time
 from sqlalchemy.orm import relationship
 
 from app.core.database import Base
@@ -17,6 +17,8 @@ class Proyecto(Base, AuditMixin):
     nombre = Column(String(100), nullable=False)
     descripcion = Column(String(300), nullable=True)
     parametros_operativos = Column(Text, nullable=True)  # JSON: ocupacion_maxima, costos, etc.
+    rango_hora_desde = Column(Time, nullable=True)
+    rango_hora_hasta = Column(Time, nullable=True)
     activo = Column(Boolean, default=True, nullable=False)
 
     turnos = relationship("Turno", back_populates="proyecto", cascade="all, delete-orphan")

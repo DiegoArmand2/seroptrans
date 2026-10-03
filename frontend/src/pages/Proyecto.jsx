@@ -11,6 +11,23 @@ import { proyectosService } from '../services/proyectos.service'
 import { useProject } from '../contexts/ProjectContext'
 import { getErrorMessage } from '../utils/apiError'
 
+function timeApiToInput(v) {
+  if (v == null || v === '') return ''
+  const s = typeof v === 'string' ? v : String(v)
+  return s.length >= 5 ? s.slice(0, 5) : s
+}
+
+function timeInputToPayload(v) {
+  if (v == null || v === '') return null
+  return v
+}
+
+function formatHora(v) {
+  if (v == null || v === '') return null
+  const s = typeof v === 'string' ? v : String(v)
+  return s.length >= 5 ? s.slice(0, 5) : s
+}
+
 const Proyecto = () => {
   const { selectedProyectoId } = useProject()
   const [proyectos, setProyectos] = useState([])
@@ -22,6 +39,8 @@ const Proyecto = () => {
     nombre: '',
     descripcion: '',
     parametros_operativos: '',
+    rango_hora_desde: '',
+    rango_hora_hasta: '',
     activo: true,
   })
 
@@ -44,7 +63,14 @@ const Proyecto = () => {
   const openCreate = () => {
     setEditing(null)
     setEditingFull(null)
-    setForm({ nombre: '', descripcion: '', parametros_operativos: '', activo: true })
+    setForm({
+      nombre: '',
+      descripcion: '',
+      parametros_operativos: '',
+      rango_hora_desde: '',
+      rango_hora_hasta: '',
+      activo: true,
+    })
     setModalOpen(true)
   }
 
@@ -54,12 +80,22 @@ const Proyecto = () => {
       nombre: p.nombre,
       descripcion: p.descripcion || '',
       parametros_operativos: p.parametros_operativos || '',
+      rango_hora_desde: timeApiToInput(p.rango_hora_desde),
+      rango_hora_hasta: timeApiToInput(p.rango_hora_hasta),
       activo: p.activo ?? true,
     })
     setModalOpen(true)
     try {
       const { data } = await proyectosService.get(p.proyecto_id)
       setEditingFull(data)
+      setForm({
+        nombre: data.nombre,
+        descripcion: data.descripcion || '',
+        parametros_operativos: data.parametros_operativos || '',
+        rango_hora_desde: timeApiToInput(data.rango_hora_desde),
+        rango_hora_hasta: timeApiToInput(data.rango_hora_hasta),
+        activo: data.activo ?? true,
+      })
     } catch {
       setEditingFull(p)
     }
@@ -68,7 +104,11 @@ const Proyecto = () => {
   const handleSubmit = async (e) => {
     e.preventDefault()
     try {
-      const payload = { ...form }
+      const payload = {
+        ...form,
+        rango_hora_desde: timeInputToPayload(form.rango_hora_desde),
+        rango_hora_hasta: timeInputToPayload(form.rango_hora_hasta),
+      }
       if (editing) {
         await proyectosService.update(editing.proyecto_id, payload)
       } else {
@@ -127,23 +167,32 @@ const Proyecto = () => {
               : 'No hay proyectos'}
           </div>
         )}
-        {proyectosFiltrados.map((p) => (
-          <Card key={p.proyecto_id}>
-            <div className="flex items-start justify-between">
-              <div>
-                <h3 className="font-heading font-semibold text-primary text-lg">{p.nombre}</h3>
-                <p className="text-sm text-muted mt-1">{p.descripcion || '—'}</p>
-                <span className={`inline-block mt-2 px-2 py-0.5 rounded text-xs ${p.activo ? 'bg-emerald-100 text-emerald-800' : 'bg-muted/30 text-muted'}`}>
-                  {p.activo ? 'Activo' : 'Inactivo'}
-                </span>
+        {proyectosFiltrados.map((p) => {
+          const desde = formatHora(p.rango_hora_desde)
+          const hasta = formatHora(p.rango_hora_hasta)
+          return (
+            <Card key={p.proyecto_id}>
+              <div className="flex items-start justify-between">
+                <div>
+                  <h3 className="font-heading font-semibold text-primary text-lg">{p.nombre}</h3>
+                  <p className="text-sm text-muted mt-1">{p.descripcion || '—'}</p>
+                  {(desde || hasta) && (
+                    <p className="text-sm text-muted mt-1">
+                      Rango: {desde || '—'} – {hasta || '—'}
+                    </p>
+                  )}
+                  <span className={`inline-block mt-2 px-2 py-0.5 rounded text-xs ${p.activo ? 'bg-emerald-100 text-emerald-800' : 'bg-muted/30 text-muted'}`}>
+                    {p.activo ? 'Activo' : 'Inactivo'}
+                  </span>
+                </div>
+                <div className="flex gap-2">
+                  <Button variant="ghost" size="sm" icon={<Pencil className="w-4 h-4" />} onClick={() => openEdit(p)} />
+                  <Button variant="ghost" size="sm" icon={<Trash2 className="w-4 h-4 text-red-600" />} onClick={() => handleDelete(p.proyecto_id)} />
+                </div>
               </div>
-              <div className="flex gap-2">
-                <Button variant="ghost" size="sm" icon={<Pencil className="w-4 h-4" />} onClick={() => openEdit(p)} />
-                <Button variant="ghost" size="sm" icon={<Trash2 className="w-4 h-4 text-red-600" />} onClick={() => handleDelete(p.proyecto_id)} />
-              </div>
-            </div>
-          </Card>
-        ))}
+            </Card>
+          )
+        })}
       </div>
 
       <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} title={editing ? 'Editar proyecto' : 'Nuevo proyecto'}>
@@ -151,6 +200,20 @@ const Proyecto = () => {
           <Input label="Nombre" value={form.nombre} onChange={(e) => setForm({ ...form, nombre: e.target.value })} required />
           <Input label="Descripción" value={form.descripcion} onChange={(e) => setForm({ ...form, descripcion: e.target.value })} />
           <Input label="Parámetros operativos (JSON)" value={form.parametros_operativos} onChange={(e) => setForm({ ...form, parametros_operativos: e.target.value })} placeholder='{"ocupacion_maxima": 13}' />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Input
+              label="Rango hora desde"
+              type="time"
+              value={form.rango_hora_desde}
+              onChange={(e) => setForm({ ...form, rango_hora_desde: e.target.value })}
+            />
+            <Input
+              label="Rango hora hasta"
+              type="time"
+              value={form.rango_hora_hasta}
+              onChange={(e) => setForm({ ...form, rango_hora_hasta: e.target.value })}
+            />
+          </div>
           <div className="flex items-center gap-2">
             <input type="checkbox" id="activo" checked={form.activo} onChange={(e) => setForm({ ...form, activo: e.target.checked })} className="rounded w-4 h-4 accent-primary" />
             <label htmlFor="activo" className="text-sm font-medium text-primary">Activo</label>

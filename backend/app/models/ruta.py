@@ -19,6 +19,7 @@ class Ruta(Base, AuditMixin):
     codigo = Column(String(50), nullable=True)
     punto_inicio = Column(String(30), nullable=False, default="domicilio")
     punto_inicio_salida = Column(String(30), nullable=False, default="domicilio")
+    punto_inicio_enabled = Column(Boolean, default=False, nullable=False)
     origen_nombre = Column(String(255), nullable=True)
     origen_lat = Column(Numeric(10, 7), nullable=True)
     origen_lng = Column(Numeric(10, 7), nullable=True)

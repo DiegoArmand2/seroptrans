@@ -72,6 +72,7 @@ def create_ruta(db: Session, ruta: RutaCreate, creado_por_id: Optional[str] = No
         codigo=ruta.codigo,
         punto_inicio=ruta.punto_inicio,
         punto_inicio_salida=ruta.punto_inicio_salida,
+        punto_inicio_enabled=ruta.punto_inicio_enabled,
         origen_nombre=ruta.origen_nombre,
         origen_lat=ruta.origen_lat,
         origen_lng=ruta.origen_lng,

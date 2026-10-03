@@ -127,6 +127,7 @@ class RutaBase(BaseModel):
     codigo: Optional[str] = Field(None, max_length=50)
     punto_inicio: PuntoInicioRuta = "domicilio"
     punto_inicio_salida: PuntoInicioRuta = "domicilio"
+    punto_inicio_enabled: bool = False
     origen_nombre: Optional[str] = Field(None, max_length=255)
     origen_lat: Optional[Decimal] = None
     origen_lng: Optional[Decimal] = None
@@ -172,6 +173,7 @@ class RutaUpdate(BaseModel):
     codigo: Optional[str] = Field(None, max_length=50)
     punto_inicio: Optional[PuntoInicioRuta] = None
     punto_inicio_salida: Optional[PuntoInicioRuta] = None
+    punto_inicio_enabled: Optional[bool] = None
     origen_nombre: Optional[str] = Field(None, max_length=255)
     origen_lat: Optional[Decimal] = None
     origen_lng: Optional[Decimal] = None

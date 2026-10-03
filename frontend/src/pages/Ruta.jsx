@@ -50,6 +50,7 @@ function rutaToForm(data) {
     codigo: data.codigo ?? '',
     punto_inicio: data.punto_inicio || 'domicilio',
     punto_inicio_salida: data.punto_inicio_salida || 'domicilio',
+    punto_inicio_enabled: data.punto_inicio_enabled ?? false,
     origen_nombre: data.origen_nombre ?? '',
     origen_lat: data.origen_lat != null && data.origen_lat !== '' ? String(data.origen_lat) : '',
     origen_lng: data.origen_lng != null && data.origen_lng !== '' ? String(data.origen_lng) : '',
@@ -78,6 +79,7 @@ const Ruta = () => {
     codigo: '',
     punto_inicio: 'domicilio',
     punto_inicio_salida: 'domicilio',
+    punto_inicio_enabled: false,
     ...GEO_FIELDS,
     sector: '',
     geocerca: '',
@@ -113,6 +115,7 @@ const Ruta = () => {
       codigo: '',
       punto_inicio: 'domicilio',
       punto_inicio_salida: 'domicilio',
+      punto_inicio_enabled: false,
       ...GEO_FIELDS,
       sector: '',
       geocerca: '',
@@ -283,6 +286,18 @@ const Ruta = () => {
               />
               <Input label="Sector" value={form.sector} onChange={(e) => setForm({ ...form, sector: e.target.value })} />
               <Input label="Costo base" type="number" step="0.01" value={form.costo_base} onChange={(e) => setForm({ ...form, costo_base: e.target.value })} />
+              <div className="flex items-center gap-2 sm:col-span-2">
+                <input
+                  type="checkbox"
+                  id="punto_inicio_enabled"
+                  checked={form.punto_inicio_enabled}
+                  onChange={(e) => setForm({ ...form, punto_inicio_enabled: e.target.checked })}
+                  className="rounded w-4 h-4 accent-primary"
+                />
+                <label htmlFor="punto_inicio_enabled" className="text-sm font-medium text-primary">
+                  Habilitar Puntos de Inicio
+                </label>
+              </div>
               <Select
                 label="Punto de inicio ingreso"
                 options={PUNTO_INICIO_OPTIONS}

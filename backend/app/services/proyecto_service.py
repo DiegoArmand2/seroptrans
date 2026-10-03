@@ -24,6 +24,8 @@ def create_proyecto(db: Session, proyecto: ProyectoCreate, creado_por_id: Option
         nombre=proyecto.nombre,
         descripcion=proyecto.descripcion,
         parametros_operativos=proyecto.parametros_operativos,
+        rango_hora_desde=proyecto.rango_hora_desde,
+        rango_hora_hasta=proyecto.rango_hora_hasta,
         activo=proyecto.activo,
         creado_por=creado_por_id,
     )
