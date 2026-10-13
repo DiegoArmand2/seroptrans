@@ -5,7 +5,12 @@ from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile
 from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 
-from app.core.config import settings, DEFAULT_N8N_HORARIOS_WEBHOOK_URL
+from app.core.config import (
+    settings,
+    DEFAULT_N8N_HORARIOS_WEBHOOK_URL,
+    DEFAULT_N8N_ROUTES1OF3_WEBHOOK_URL,
+    DEFAULT_N8N_RUTAS_BATCH_WEBHOOK_URL,
+)
 from app.core.database import get_db
 from app.core.security import get_current_user_required
 from app.models.usuario import Usuario
@@ -20,6 +25,7 @@ from app.schemas.horario_importacion import (
 from app.schemas.horario_procesar import HorarioProcesarResponse
 from app.services.horario_importacion_service import (
     call_n8n_horarios_webhook,
+    call_n8n_proyecto_horario_webhook,
     call_n8n_routes1of3_webhook,
     list_importaciones,
     create_importacion,
@@ -258,7 +264,7 @@ def procesar_importacion_endpoint(
             status_code=409,
             detail="Solo se puede procesar un horario en estado confirmado",
         )
-    webhook = (settings.N8N_ROUTES1OF3_WEBHOOK_URL or "").strip() or "https://n8nadm.admagentes.online/webhook/routes1of3"
+    webhook = (settings.N8N_ROUTES1OF3_WEBHOOK_URL or "").strip() or DEFAULT_N8N_ROUTES1OF3_WEBHOOK_URL
     body, transport_err = call_n8n_routes1of3_webhook(
         webhook,
         proyecto_id=row.proyecto_id,
@@ -268,6 +274,35 @@ def procesar_importacion_endpoint(
         raise HTTPException(status_code=503, detail=transport_err)
     msg, _code, title = _normalize_n8n_payload(body)
     mensaje = msg or title or "Procesamiento solicitado"
+    return HorarioProcesarResponse(ok=True, mensaje=mensaje)
+
+
+@router.post("/importaciones/{horario_importacion_id}/rutas-batch", response_model=HorarioProcesarResponse)
+def rutas_batch_importacion_endpoint(
+    horario_importacion_id: str,
+    db: Session = Depends(get_db),
+    current_user: Usuario = Depends(get_current_user_required),
+):
+    if not has_proceso(db, current_user.usuario_id, "procesar_horario"):
+        raise HTTPException(status_code=403, detail="Sin permiso para procesar horarios")
+    row = get_importacion_by_id(db, horario_importacion_id)
+    if not row or not can_access_proyecto(db, current_user.usuario_id, row.proyecto_id):
+        raise HTTPException(status_code=404, detail="Importación no encontrada")
+    if (row.estado or "DR") != "CO":
+        raise HTTPException(
+            status_code=409,
+            detail="Solo se puede ejecutar rutas batch en un horario confirmado",
+        )
+    webhook = (settings.N8N_RUTAS_BATCH_WEBHOOK_URL or "").strip() or DEFAULT_N8N_RUTAS_BATCH_WEBHOOK_URL
+    body, transport_err = call_n8n_proyecto_horario_webhook(
+        webhook,
+        proyecto_id=row.proyecto_id,
+        horario_id=row.horario_importacion_id,
+    )
+    if transport_err:
+        raise HTTPException(status_code=503, detail=transport_err)
+    msg, _code, title = _normalize_n8n_payload(body)
+    mensaje = msg or title or "Batch de rutas solicitado"
     return HorarioProcesarResponse(ok=True, mensaje=mensaje)
 
 

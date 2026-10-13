@@ -92,11 +92,12 @@ const TurnosPersonal = () => {
   const [columnFilters, setColumnFilters] = useState([])
   const [globalFilter, setGlobalFilter] = useState('')
   const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 10 })
-  /** Modal único para Procesar: idle | loading | success | error */
+  /** Modal para Procesar / Rutas batch: idle | loading | success | error */
   const [procesarModal, setProcesarModal] = useState({
     open: false,
     phase: 'idle',
     importacionId: null,
+    kind: null, // 'procesar' | 'rutas_batch'
   })
   const [loading, setLoading] = useState(true)
   const [modalOpen, setModalOpen] = useState(false)
@@ -313,6 +314,8 @@ const TurnosPersonal = () => {
     (importacionDetail.estado || 'DR') === 'CO' &&
     hasProceso('procesar_horario')
 
+  const showRutasBatchBtn = showProcesarBtn
+
   const handleConfirmarHorario = async () => {
     const id = horarioImportacionIdParam
     if (!id) return
@@ -327,11 +330,15 @@ const TurnosPersonal = () => {
   }
 
   const resetProcesarModal = () => {
-    setProcesarModal({ open: false, phase: 'idle', importacionId: null })
+    setProcesarModal({ open: false, phase: 'idle', importacionId: null, kind: null })
   }
 
   const handleProcesarAceptar = () => {
-    if (procesarModal.phase === 'success' && procesarModal.importacionId) {
+    if (
+      procesarModal.phase === 'success' &&
+      procesarModal.kind === 'procesar' &&
+      procesarModal.importacionId
+    ) {
       navigate(
         `/demanda-viajes?horario_importacion_id=${encodeURIComponent(procesarModal.importacionId)}`
       )
@@ -342,13 +349,26 @@ const TurnosPersonal = () => {
   const handleProcesarHorario = async () => {
     const id = horarioImportacionIdParam
     if (!id) return
-    setProcesarModal({ open: true, phase: 'loading', importacionId: id })
+    setProcesarModal({ open: true, phase: 'loading', importacionId: id, kind: 'procesar' })
     try {
       await horariosService.procesarImportacion(id)
-      setProcesarModal({ open: true, phase: 'success', importacionId: id })
+      setProcesarModal({ open: true, phase: 'success', importacionId: id, kind: 'procesar' })
     } catch (err) {
       console.error(err)
-      setProcesarModal({ open: true, phase: 'error', importacionId: id })
+      setProcesarModal({ open: true, phase: 'error', importacionId: id, kind: 'procesar' })
+    }
+  }
+
+  const handleRutasBatch = async () => {
+    const id = horarioImportacionIdParam
+    if (!id) return
+    setProcesarModal({ open: true, phase: 'loading', importacionId: id, kind: 'rutas_batch' })
+    try {
+      await horariosService.rutasBatchImportacion(id)
+      setProcesarModal({ open: true, phase: 'success', importacionId: id, kind: 'rutas_batch' })
+    } catch (err) {
+      console.error(err)
+      setProcesarModal({ open: true, phase: 'error', importacionId: id, kind: 'rutas_batch' })
     }
   }
 
@@ -543,14 +563,16 @@ const TurnosPersonal = () => {
                   <Spinner size="lg" />
                 </div>
                 <p id="procesar-turnos-title" className="text-lg font-heading font-semibold text-primary">
-                  Procesando.....
+                  {procesarModal.kind === 'rutas_batch' ? 'Procesando rutas batch.....' : 'Procesando.....'}
                 </p>
               </>
             )}
             {procesarModal.phase === 'success' && (
               <>
                 <p id="procesar-turnos-title" className="text-lg font-heading font-semibold text-primary mb-6">
-                  Proceso completado con exito
+                  {procesarModal.kind === 'rutas_batch'
+                    ? 'Batch de rutas completado con éxito'
+                    : 'Proceso completado con exito'}
                 </p>
                 <Button variant="accent" type="button" onClick={handleProcesarAceptar}>
                   Aceptar
@@ -560,7 +582,9 @@ const TurnosPersonal = () => {
             {procesarModal.phase === 'error' && (
               <>
                 <p id="procesar-turnos-title" className="text-lg font-heading font-semibold text-primary mb-6">
-                  Proceso fallido, intente nuevamente
+                  {procesarModal.kind === 'rutas_batch'
+                    ? 'Batch de rutas fallido, intente nuevamente'
+                    : 'Proceso fallido, intente nuevamente'}
                 </p>
                 <Button variant="accent" type="button" onClick={handleProcesarAceptar}>
                   Aceptar
@@ -587,6 +611,11 @@ const TurnosPersonal = () => {
             {showProcesarBtn && (
               <Button variant="outline" onClick={handleProcesarHorario}>
                 Procesar
+              </Button>
+            )}
+            {showRutasBatchBtn && (
+              <Button variant="outline" onClick={handleRutasBatch}>
+                Rutas batch
               </Button>
             )}
             <Button

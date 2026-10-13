@@ -68,13 +68,13 @@ def call_n8n_horarios_webhook(
     return body, None
 
 
-def call_n8n_routes1of3_webhook(
+def call_n8n_proyecto_horario_webhook(
     webhook_url: str,
     *,
     proyecto_id: str,
     horario_id: str,
 ) -> Tuple[Any, Optional[str]]:
-    """POST al webhook n8n para procesar horarios (routes1of3)."""
+    """POST al webhook n8n con payload { id_proyecto, horario_id } (procesar / rutas_batch)."""
     try:
         n8n_timeout = float(settings.N8N_WEBHOOK_TIMEOUT_SECONDS)
         with httpx.Client(timeout=n8n_timeout) as client:
@@ -98,6 +98,10 @@ def call_n8n_routes1of3_webhook(
         return None, text[:2000] if text else f"HTTP {r.status_code}"
 
     return body, None
+
+
+# Alias histórico (procesar → routes1of3)
+call_n8n_routes1of3_webhook = call_n8n_proyecto_horario_webhook
 
 
 def create_importacion(
