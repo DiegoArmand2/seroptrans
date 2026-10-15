@@ -16,6 +16,7 @@ import Input from '../components/ui/Input'
 import Select from '../components/ui/Select'
 import Spinner from '../components/ui/Spinner'
 import AuditoriaSection from '../components/ui/AuditoriaSection'
+import LatLngMapPicker from '../components/maps/LatLngMapPicker'
 import { pasajerosService } from '../services/pasajeros.service'
 import { proyectosService } from '../services/proyectos.service'
 import { rutasService } from '../services/rutas.service'
@@ -672,6 +673,13 @@ const Pasajero = () => {
               placeholder="Ej. -78.52495"
             />
           </div>
+          {modalOpen && (
+            <LatLngMapPicker
+              lat={form.lat}
+              lng={form.lng}
+              onChange={({ lat, lng }) => setForm((f) => ({ ...f, lat, lng }))}
+            />
+          )}
           <Input
             type="password"
             label="Contraseña"
