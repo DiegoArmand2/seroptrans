@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react'
-import { Plus, Pencil, Trash2 } from 'lucide-react'
+import { useMemo, useState, useEffect } from 'react'
+import { Plus } from 'lucide-react'
 import PageHeader from '../components/layout/PageHeader'
 import Button from '../components/ui/Button'
-import Card from '../components/ui/Card'
 import Modal from '../components/ui/Modal'
+import DataTable, { StatusBadge, makeActionsColumn } from '../components/ui/DataTable'
 import Input from '../components/ui/Input'
 import Spinner from '../components/ui/Spinner'
 import AuditoriaSection from '../components/ui/AuditoriaSection'
@@ -121,15 +121,55 @@ const Proyecto = () => {
     }
   }
 
-  const handleDelete = async (id) => {
+  const handleDelete = async (p) => {
     if (!confirm('¿Eliminar este proyecto?')) return
     try {
-      await proyectosService.delete(id)
+      await proyectosService.delete(p.proyecto_id)
       loadData()
     } catch (err) {
       alert(getErrorMessage(err) || 'Error al eliminar')
     }
   }
+
+  const columns = useMemo(
+    () => [
+      {
+        accessorKey: 'nombre',
+        header: 'Nombre',
+        filterFn: 'includesString',
+        cell: ({ getValue }) => <span className="text-fg font-medium">{getValue()}</span>,
+      },
+      {
+        id: 'descripcion',
+        accessorFn: (p) => p.descripcion || '—',
+        header: 'Descripción',
+        filterFn: 'includesString',
+        cell: ({ getValue }) => <span className="text-muted">{getValue()}</span>,
+      },
+      {
+        id: 'rango',
+        accessorFn: (p) => {
+          const desde = formatHora(p.rango_hora_desde)
+          const hasta = formatHora(p.rango_hora_hasta)
+          if (!desde && !hasta) return '—'
+          return `${desde || '—'} – ${hasta || '—'}`
+        },
+        header: 'Rango',
+        filterFn: 'includesString',
+        cell: ({ getValue }) => <span className="text-muted text-sm">{getValue()}</span>,
+      },
+      {
+        id: 'estado',
+        accessorFn: (p) => (p.activo ? 'Activo' : 'Inactivo'),
+        header: 'Estado',
+        filterFn: 'includesString',
+        cell: ({ row }) => <StatusBadge activo={row.original.activo} />,
+      },
+      makeActionsColumn({ onEdit: openEdit, onDelete: handleDelete }),
+    ],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    []
+  )
 
   const proyectosFiltrados = selectedProyectoId
     ? proyectos.filter((p) => p.proyecto_id === selectedProyectoId)
@@ -159,41 +199,16 @@ const Proyecto = () => {
         }
       />
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {proyectosFiltrados.length === 0 && (
-          <div className="col-span-full py-12 text-center text-muted">
-            {selectedProyectoId
-              ? 'No hay proyectos que coincidan con el filtro'
-              : 'No hay proyectos'}
-          </div>
-        )}
-        {proyectosFiltrados.map((p) => {
-          const desde = formatHora(p.rango_hora_desde)
-          const hasta = formatHora(p.rango_hora_hasta)
-          return (
-            <Card key={p.proyecto_id}>
-              <div className="flex items-start justify-between">
-                <div>
-                  <h3 className="font-heading font-semibold text-primary text-lg">{p.nombre}</h3>
-                  <p className="text-sm text-muted mt-1">{p.descripcion || '—'}</p>
-                  {(desde || hasta) && (
-                    <p className="text-sm text-muted mt-1">
-                      Rango: {desde || '—'} – {hasta || '—'}
-                    </p>
-                  )}
-                  <span className={`inline-block mt-2 px-2 py-0.5 rounded text-xs ${p.activo ? 'bg-emerald-100 text-emerald-800' : 'bg-muted/30 text-muted'}`}>
-                    {p.activo ? 'Activo' : 'Inactivo'}
-                  </span>
-                </div>
-                <div className="flex gap-2">
-                  <Button variant="ghost" size="sm" icon={<Pencil className="w-4 h-4" />} onClick={() => openEdit(p)} />
-                  <Button variant="ghost" size="sm" icon={<Trash2 className="w-4 h-4 text-red-600" />} onClick={() => handleDelete(p.proyecto_id)} />
-                </div>
-              </div>
-            </Card>
-          )
-        })}
-      </div>
+      <DataTable
+        data={proyectosFiltrados}
+        columns={columns}
+        getRowId={(p) => p.proyecto_id}
+        exportFileName="proyectos"
+        exportTitle="Proyectos"
+        emptyMessage={
+          selectedProyectoId ? 'No hay proyectos que coincidan con el filtro' : 'No hay proyectos'
+        }
+      />
 
       <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} title={editing ? 'Editar proyecto' : 'Nuevo proyecto'}>
         <form onSubmit={handleSubmit} className="space-y-4">

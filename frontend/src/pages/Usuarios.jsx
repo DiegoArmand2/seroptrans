@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react'
-import { Plus, Pencil, Trash2 } from 'lucide-react'
+import { useMemo, useState, useEffect } from 'react'
+import { Plus } from 'lucide-react'
 import PageHeader from '../components/layout/PageHeader'
 import Button from '../components/ui/Button'
-import Card from '../components/ui/Card'
 import Modal from '../components/ui/Modal'
+import DataTable, { makeActionsColumn } from '../components/ui/DataTable'
 import Input from '../components/ui/Input'
 import MultiSelect from '../components/ui/MultiSelect'
 import Spinner from '../components/ui/Spinner'
@@ -118,15 +118,48 @@ const Usuarios = () => {
     }
   }
 
-  const handleDelete = async (id) => {
+  const handleDelete = async (u) => {
     if (!confirm('¿Eliminar este usuario?')) return
     try {
-      await usuariosService.delete(id)
+      await usuariosService.delete(u.usuario_id)
       loadData()
     } catch (err) {
       alert(getErrorMessage(err) || 'Error al eliminar')
     }
   }
+
+  const columns = useMemo(
+    () => [
+      {
+        accessorKey: 'login',
+        header: 'Usuario',
+        filterFn: 'includesString',
+        cell: ({ getValue }) => <span className="font-mono">{getValue()}</span>,
+      },
+      {
+        accessorKey: 'nombre_usuario',
+        header: 'Nombre',
+        filterFn: 'includesString',
+      },
+      {
+        id: 'email',
+        accessorFn: (u) => u.email || '—',
+        header: 'Email',
+        filterFn: 'includesString',
+        cell: ({ getValue }) => <span className="text-muted">{getValue()}</span>,
+      },
+      {
+        id: 'roles',
+        accessorFn: (u) => ((u.roles || []).length ? (u.roles || []).join(', ') : '—'),
+        header: 'Roles',
+        filterFn: 'includesString',
+        cell: ({ getValue }) => <span className="text-muted text-sm">{getValue()}</span>,
+      },
+      makeActionsColumn({ onEdit: openEdit, onDelete: handleDelete }),
+    ],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    []
+  )
 
   if (loading) {
     return (
@@ -148,59 +181,14 @@ const Usuarios = () => {
         }
       />
 
-      <Card>
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-primary/10">
-                <th className="text-left py-3 px-4 font-heading text-primary font-semibold">
-                  Usuario
-                </th>
-                <th className="text-left py-3 px-4 font-heading text-primary font-semibold">
-                  Nombre
-                </th>
-                <th className="text-left py-3 px-4 font-heading text-primary font-semibold">
-                  Email
-                </th>
-                <th className="text-left py-3 px-4 font-heading text-primary font-semibold">
-                  Roles
-                </th>
-                <th className="text-right py-3 px-4 font-heading text-primary font-semibold">
-                  Acciones
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {usuarios.map((u) => (
-                <tr key={u.usuario_id} className="border-b border-primary/5 hover:bg-primary/5">
-                  <td className="py-3 px-4 font-mono">{u.login}</td>
-                  <td className="py-3 px-4">{u.nombre_usuario}</td>
-                  <td className="py-3 px-4 text-muted">{u.email || '—'}</td>
-                  <td className="py-3 px-4 text-muted text-sm">
-                    {(u.roles || []).length ? (u.roles || []).join(', ') : '—'}
-                  </td>
-                  <td className="py-3 px-4 text-right">
-                    <div className="flex justify-end gap-2">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        icon={<Pencil className="w-4 h-4" />}
-                        onClick={() => openEdit(u)}
-                      />
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        icon={<Trash2 className="w-4 h-4 text-red-600" />}
-                        onClick={() => handleDelete(u.usuario_id)}
-                      />
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </Card>
+      <DataTable
+        data={usuarios}
+        columns={columns}
+        getRowId={(u) => u.usuario_id}
+        exportFileName="usuarios"
+        exportTitle="Usuarios"
+        emptyMessage="No hay usuarios"
+      />
 
       <Modal
         isOpen={modalOpen}

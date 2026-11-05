@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react'
-import { Plus, Pencil, Trash2, MapPinned } from 'lucide-react'
+import { useMemo, useState, useEffect } from 'react'
+import { Plus, MapPinned } from 'lucide-react'
 import PageHeader from '../components/layout/PageHeader'
 import Button from '../components/ui/Button'
-import Card from '../components/ui/Card'
 import Modal from '../components/ui/Modal'
+import DataTable, { makeActionsColumn } from '../components/ui/DataTable'
 import Input from '../components/ui/Input'
 import Select from '../components/ui/Select'
 import Spinner from '../components/ui/Spinner'
@@ -179,15 +179,90 @@ const Ruta = () => {
     }
   }
 
-  const handleDelete = async (id) => {
+  const handleDelete = async (r) => {
     if (!confirm('¿Eliminar esta ruta?')) return
     try {
-      await rutasService.delete(id)
+      await rutasService.delete(r.ruta_id)
       loadData()
     } catch (err) {
       alert(getErrorMessage(err) || 'Error al eliminar')
     }
   }
+
+  const columns = useMemo(
+    () => [
+      {
+        id: 'proyecto',
+        accessorFn: (row) => proyectos.find((p) => p.proyecto_id === row.proyecto_id)?.nombre || '—',
+        header: 'Proyecto',
+        filterFn: 'includesString',
+      },
+      {
+        accessorKey: 'nombre',
+        header: 'Nombre',
+        filterFn: 'includesString',
+      },
+      {
+        id: 'codigo',
+        accessorFn: (row) => row.codigo || '—',
+        header: 'Código',
+        filterFn: 'includesString',
+        cell: ({ getValue }) => <span className="text-muted">{getValue()}</span>,
+      },
+      {
+        id: 'punto_inicio',
+        accessorFn: (row) => puntoInicioLabel(row.punto_inicio),
+        header: 'Punto de inicio ingreso',
+        filterFn: 'includesString',
+        cell: ({ getValue }) => <span className="text-muted">{getValue()}</span>,
+      },
+      {
+        id: 'punto_inicio_salida',
+        accessorFn: (row) => puntoInicioLabel(row.punto_inicio_salida),
+        header: 'Punto de inicio salida',
+        filterFn: 'includesString',
+        cell: ({ getValue }) => <span className="text-muted">{getValue()}</span>,
+      },
+      {
+        id: 'sector',
+        accessorFn: (row) => row.sector || '—',
+        header: 'Sector',
+        filterFn: 'includesString',
+        cell: ({ getValue }) => <span className="text-muted">{getValue()}</span>,
+      },
+      {
+        id: 'geo',
+        accessorFn: (row) => (row.geocerca && String(row.geocerca).trim() ? 'Sí' : 'No'),
+        header: 'Geo',
+        filterFn: 'includesString',
+        meta: { headerTitle: 'Geocerca definida' },
+        cell: ({ row }) => {
+          const item = row.original
+          return item.geocerca && String(item.geocerca).trim() ? (
+            <MapPinned className="w-5 h-5 inline-block text-accent" aria-label="Tiene geocerca" />
+          ) : (
+            '—'
+          )
+        },
+      },
+      {
+        id: 'tipo',
+        accessorFn: (row) => row.tipo || '—',
+        header: 'Tipo',
+        filterFn: 'includesString',
+        cell: ({ getValue }) => <span className="capitalize">{getValue()}</span>,
+      },
+      {
+        id: 'costo_base',
+        accessorFn: (row) => (row.costo_base != null ? String(row.costo_base) : '—'),
+        header: 'Costo',
+        filterFn: 'includesString',
+      },
+      makeActionsColumn({ onEdit: openEdit, onDelete: handleDelete }),
+    ],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [proyectos]
+  )
 
   if (loading) {
     return (
@@ -205,62 +280,15 @@ const Ruta = () => {
         children={<Button icon={<Plus className="w-5 h-5" />} onClick={openCreate}>Nueva ruta</Button>}
       />
 
-      <Card>
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-primary/10">
-                <th className="text-left py-3 px-4 font-heading text-primary font-semibold">Proyecto</th>
-                <th className="text-left py-3 px-4 font-heading text-primary font-semibold">Nombre</th>
-                <th className="text-left py-3 px-4 font-heading text-primary font-semibold">Código</th>
-                <th className="text-left py-3 px-4 font-heading text-primary font-semibold">Punto de inicio ingreso</th>
-                <th className="text-left py-3 px-4 font-heading text-primary font-semibold">Punto de inicio salida</th>
-                <th className="text-left py-3 px-4 font-heading text-primary font-semibold">Sector</th>
-                <th className="text-center py-3 px-4 font-heading text-primary font-semibold" title="Geocerca definida">
-                  Geo
-                </th>
-                <th className="text-left py-3 px-4 font-heading text-primary font-semibold">Tipo</th>
-                <th className="text-left py-3 px-4 font-heading text-primary font-semibold">Costo</th>
-                <th className="text-right py-3 px-4 font-heading text-primary font-semibold">Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rutas.length === 0 && (
-                <tr>
-                  <td colSpan={10} className="py-12 text-center text-muted">
-                    {selectedProyectoId ? 'No hay rutas en este proyecto' : 'No hay rutas'}
-                  </td>
-                </tr>
-              )}
-              {rutas.map((r) => (
-                <tr key={r.ruta_id} className="border-b border-primary/5 hover:bg-primary/5">
-                  <td className="py-3 px-4">{proyectos.find((p) => p.proyecto_id === r.proyecto_id)?.nombre || '-'}</td>
-                  <td className="py-3 px-4">{r.nombre}</td>
-                  <td className="py-3 px-4 text-muted">{r.codigo || '—'}</td>
-                  <td className="py-3 px-4 text-muted">{puntoInicioLabel(r.punto_inicio)}</td>
-                  <td className="py-3 px-4 text-muted">{puntoInicioLabel(r.punto_inicio_salida)}</td>
-                  <td className="py-3 px-4 text-muted">{r.sector || '—'}</td>
-                  <td className="py-3 px-4 text-center text-muted">
-                    {r.geocerca && String(r.geocerca).trim() ? (
-                      <MapPinned className="w-5 h-5 inline-block text-accent" aria-label="Tiene geocerca" />
-                    ) : (
-                      '—'
-                    )}
-                  </td>
-                  <td className="py-3 px-4 capitalize">{r.tipo}</td>
-                  <td className="py-3 px-4">{r.costo_base != null ? r.costo_base : '—'}</td>
-                  <td className="py-3 px-4 text-right">
-                    <div className="flex justify-end gap-2">
-                      <Button variant="ghost" size="sm" icon={<Pencil className="w-4 h-4" />} onClick={() => openEdit(r)} />
-                      <Button variant="ghost" size="sm" icon={<Trash2 className="w-4 h-4 text-red-600" />} onClick={() => handleDelete(r.ruta_id)} />
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </Card>
+      <DataTable
+        data={rutas}
+        columns={columns}
+        getRowId={(row) => row.ruta_id}
+        exportFileName="rutas"
+        exportTitle="Rutas"
+        emptyMessage={selectedProyectoId ? 'No hay rutas en este proyecto' : 'No hay rutas'}
+        tableMinWidth="min-w-[1200px]"
+      />
 
       <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} title={editing ? 'Editar ruta' : 'Nueva ruta'} size="3xl">
         <form onSubmit={handleSubmit} className="space-y-4">

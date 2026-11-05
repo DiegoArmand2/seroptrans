@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react'
-import { Plus, Pencil, Trash2 } from 'lucide-react'
+import { useMemo, useState, useEffect } from 'react'
+import { Plus } from 'lucide-react'
 import PageHeader from '../components/layout/PageHeader'
 import Button from '../components/ui/Button'
-import Card from '../components/ui/Card'
 import Modal from '../components/ui/Modal'
+import DataTable, { StatusBadge, makeActionsColumn } from '../components/ui/DataTable'
 import Input from '../components/ui/Input'
 import Select from '../components/ui/Select'
 import Spinner from '../components/ui/Spinner'
@@ -177,15 +177,87 @@ const Vehiculo = () => {
     }
   }
 
-  const handleDelete = async (id) => {
+  const handleDelete = async (v) => {
     if (!confirm('¿Eliminar este vehículo?')) return
     try {
-      await vehiculosService.delete(id)
+      await vehiculosService.delete(v.vehiculo_id)
       loadData()
     } catch (err) {
       alert(getErrorMessage(err) || 'Error al eliminar')
     }
   }
+
+  const columns = useMemo(
+    () => [
+      {
+        id: 'proyecto',
+        accessorFn: (r) => proyectos.find((p) => p.proyecto_id === r.proyecto_id)?.nombre || '—',
+        header: 'Proyecto',
+        filterFn: 'includesString',
+      },
+      {
+        accessorKey: 'placa',
+        header: 'Placa',
+        filterFn: 'includesString',
+        cell: ({ getValue }) => <span className="font-mono">{getValue()}</span>,
+      },
+      {
+        accessorKey: 'capacidad',
+        header: 'Capacidad',
+        filterFn: 'includesString',
+      },
+      {
+        id: 'conductor',
+        accessorFn: (r) => r.conductor_nombre || '—',
+        header: 'Conductor',
+        filterFn: 'includesString',
+      },
+      {
+        id: 'ruta',
+        accessorFn: (r) => r.ruta_nombre || '—',
+        header: 'Ruta',
+        filterFn: 'includesString',
+      },
+      {
+        id: 'tipo_vehiculo',
+        accessorFn: (r) => r.tipo_vehiculo_nombre || '—',
+        header: 'Tipo de vehículo',
+        filterFn: 'includesString',
+        cell: ({ getValue }) => <span className="text-muted">{getValue()}</span>,
+      },
+      {
+        id: 'model',
+        accessorFn: (r) => r.model || '—',
+        header: 'Model',
+        filterFn: 'includesString',
+        cell: ({ getValue }) => <span className="text-muted">{getValue()}</span>,
+      },
+      {
+        id: 'color',
+        accessorFn: (r) => r.color || '—',
+        header: 'Color',
+        filterFn: 'includesString',
+        cell: ({ getValue }) => <span className="text-muted">{getValue()}</span>,
+      },
+      {
+        id: 'rating',
+        accessorFn: (r) => (r.rating != null ? String(r.rating) : '—'),
+        header: 'Rating',
+        filterFn: 'includesString',
+        cell: ({ getValue }) => <span className="text-muted">{getValue()}</span>,
+      },
+      {
+        id: 'estado',
+        accessorFn: (r) => (r.activo ? 'Activo' : 'Inactivo'),
+        header: 'Estado',
+        filterFn: 'includesString',
+        cell: ({ row }) => <StatusBadge activo={row.original.activo} />,
+      },
+      makeActionsColumn({ onEdit: openEdit, onDelete: handleDelete }),
+    ],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [proyectos]
+  )
 
   const conductorOptions = conductores.map((c) => ({ value: c.conductor_id, label: c.nombre }))
   const rutaOptions = rutas.map((r) => ({ value: r.ruta_id, label: r.nombre }))
@@ -219,74 +291,19 @@ const Vehiculo = () => {
         }
       />
 
-      <Card>
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-primary/10">
-                <th className="text-left py-3 px-4 font-heading text-primary font-semibold">Proyecto</th>
-                <th className="text-left py-3 px-4 font-heading text-primary font-semibold">Placa</th>
-                <th className="text-left py-3 px-4 font-heading text-primary font-semibold">Capacidad</th>
-                <th className="text-left py-3 px-4 font-heading text-primary font-semibold">Conductor</th>
-                <th className="text-left py-3 px-4 font-heading text-primary font-semibold">Ruta</th>
-                <th className="text-left py-3 px-4 font-heading text-primary font-semibold">Tipo de vehículo</th>
-                <th className="text-left py-3 px-4 font-heading text-primary font-semibold">Model</th>
-                <th className="text-left py-3 px-4 font-heading text-primary font-semibold">Color</th>
-                <th className="text-left py-3 px-4 font-heading text-primary font-semibold">Rating</th>
-                <th className="text-left py-3 px-4 font-heading text-primary font-semibold">Estado</th>
-                <th className="text-right py-3 px-4 font-heading text-primary font-semibold">Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              {vehiculos.length === 0 && (
-                <tr>
-                  <td colSpan={11} className="py-12 text-center text-muted">
-                    {selectedProyectoId ? 'No hay vehículos en este proyecto' : 'No hay vehículos. Haga clic en Nuevo vehículo para crear uno.'}
-                  </td>
-                </tr>
-              )}
-              {vehiculos.map((v) => (
-                <tr key={v.vehiculo_id} className="border-b border-primary/5 hover:bg-primary/5">
-                  <td className="py-3 px-4">{proyectos.find((p) => p.proyecto_id === v.proyecto_id)?.nombre || '—'}</td>
-                  <td className="py-3 px-4 font-mono">{v.placa}</td>
-                  <td className="py-3 px-4">{v.capacidad}</td>
-                  <td className="py-3 px-4">{v.conductor_nombre || '—'}</td>
-                  <td className="py-3 px-4">{v.ruta_nombre || '—'}</td>
-                  <td className="py-3 px-4 text-muted">{v.tipo_vehiculo_nombre || '—'}</td>
-                  <td className="py-3 px-4 text-muted">{v.model || '—'}</td>
-                  <td className="py-3 px-4 text-muted">{v.color || '—'}</td>
-                  <td className="py-3 px-4 text-muted">{v.rating != null ? v.rating : '—'}</td>
-                  <td className="py-3 px-4">
-                    <span
-                      className={`px-2 py-0.5 rounded text-xs ${
-                        v.activo ? 'bg-emerald-100 text-emerald-800' : 'bg-muted/30 text-muted'
-                      }`}
-                    >
-                      {v.activo ? 'Activo' : 'Inactivo'}
-                    </span>
-                  </td>
-                  <td className="py-3 px-4 text-right">
-                    <div className="flex justify-end gap-2">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        icon={<Pencil className="w-4 h-4" />}
-                        onClick={() => openEdit(v)}
-                      />
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        icon={<Trash2 className="w-4 h-4 text-red-600" />}
-                        onClick={() => handleDelete(v.vehiculo_id)}
-                      />
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </Card>
+      <DataTable
+        data={vehiculos}
+        columns={columns}
+        getRowId={(r) => r.vehiculo_id}
+        exportFileName="vehiculos"
+        exportTitle="Vehículos"
+        emptyMessage={
+          selectedProyectoId
+            ? 'No hay vehículos en este proyecto'
+            : 'No hay vehículos. Haga clic en Nuevo vehículo para crear uno.'
+        }
+        tableMinWidth="min-w-[1100px]"
+      />
 
       <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} title={editing ? 'Editar vehículo' : 'Nuevo vehículo'}>
         <form onSubmit={handleSubmit} className="space-y-4">

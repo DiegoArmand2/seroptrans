@@ -1,12 +1,12 @@
-import { useState, useEffect } from 'react'
-import { Plus, Pencil, Trash2 } from 'lucide-react'
+import { useMemo, useState, useEffect } from 'react'
+import { Plus } from 'lucide-react'
 import PageHeader from '../components/layout/PageHeader'
 import Button from '../components/ui/Button'
-import Card from '../components/ui/Card'
 import Modal from '../components/ui/Modal'
 import Input from '../components/ui/Input'
 import Spinner from '../components/ui/Spinner'
 import AuditoriaSection from '../components/ui/AuditoriaSection'
+import DataTable, { makeActionsColumn } from '../components/ui/DataTable'
 import { rolesService } from '../services/roles.service'
 import { getErrorMessage } from '../utils/apiError'
 
@@ -68,15 +68,35 @@ const Roles = () => {
     }
   }
 
-  const handleDelete = async (id) => {
+  const handleDelete = async (r) => {
     if (!confirm('¿Eliminar este rol?')) return
     try {
-      await rolesService.delete(id)
+      await rolesService.delete(r.rol_id)
       loadData()
     } catch (err) {
       alert(getErrorMessage(err) || 'Error al eliminar')
     }
   }
+
+  const columns = useMemo(
+    () => [
+      {
+        accessorKey: 'nombre',
+        header: 'Nombre',
+        filterFn: 'includesString',
+        cell: ({ getValue }) => <span className="text-fg font-medium">{getValue()}</span>,
+      },
+      {
+        id: 'descripcion',
+        accessorFn: (r) => r.descripcion || '—',
+        header: 'Descripción',
+        filterFn: 'includesString',
+      },
+      makeActionsColumn({ onEdit: openEdit, onDelete: handleDelete }),
+    ],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    []
+  )
 
   if (loading) {
     return (
@@ -98,34 +118,14 @@ const Roles = () => {
         }
       />
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {roles.map((r) => (
-          <Card key={r.rol_id}>
-            <div className="flex items-start justify-between">
-              <div>
-                <h3 className="font-heading font-semibold text-primary text-lg">
-                  {r.nombre}
-                </h3>
-                <p className="text-sm text-muted mt-1">{r.descripcion || '—'}</p>
-              </div>
-              <div className="flex gap-2">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  icon={<Pencil className="w-4 h-4" />}
-                  onClick={() => openEdit(r)}
-                />
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  icon={<Trash2 className="w-4 h-4 text-red-600" />}
-                  onClick={() => handleDelete(r.rol_id)}
-                />
-              </div>
-            </div>
-          </Card>
-        ))}
-      </div>
+      <DataTable
+        data={roles}
+        columns={columns}
+        getRowId={(r) => r.rol_id}
+        exportFileName="roles"
+        exportTitle="Roles"
+        emptyMessage="No hay roles"
+      />
 
       <Modal
         isOpen={modalOpen}

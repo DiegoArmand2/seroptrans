@@ -1,13 +1,13 @@
-import { useState, useEffect } from 'react'
-import { Plus, Pencil, Trash2 } from 'lucide-react'
+import { useState, useEffect, useMemo } from 'react'
+import { Plus } from 'lucide-react'
 import PageHeader from '../components/layout/PageHeader'
 import Button from '../components/ui/Button'
-import Card from '../components/ui/Card'
 import Modal from '../components/ui/Modal'
 import Input from '../components/ui/Input'
 import Select from '../components/ui/Select'
 import Spinner from '../components/ui/Spinner'
 import AuditoriaSection from '../components/ui/AuditoriaSection'
+import DataTable, { StatusBadge, makeActionsColumn } from '../components/ui/DataTable'
 import { conductoresService } from '../services/conductores.service'
 import { useProject } from '../contexts/ProjectContext'
 import { getErrorMessage } from '../utils/apiError'
@@ -109,8 +109,9 @@ const Conductor = () => {
     }
   }
 
-  const handleDelete = async (id) => {
-    if (!confirm('¿Eliminar este conductor?')) return
+  const handleDelete = async (c) => {
+    const id = typeof c === 'string' ? c : c?.conductor_id
+    if (!id || !confirm('¿Eliminar este conductor?')) return
     try {
       await conductoresService.delete(id)
       loadData()
@@ -120,6 +121,48 @@ const Conductor = () => {
   }
 
   const proyectoOptions = proyectos.map((p) => ({ value: p.proyecto_id, label: p.nombre }))
+
+  const columns = useMemo(
+    () => [
+      {
+        id: 'proyecto',
+        accessorFn: (c) => (c.proyecto_nombres?.length ? c.proyecto_nombres.join(', ') : '—'),
+        header: 'Proyecto',
+        filterFn: 'includesString',
+      },
+      {
+        accessorKey: 'nombre',
+        header: 'Nombre',
+        filterFn: 'includesString',
+        cell: ({ getValue }) => <span className="text-fg">{getValue()}</span>,
+      },
+      {
+        id: 'license_number',
+        accessorFn: (c) => c.license_number || '—',
+        header: 'License number',
+        filterFn: 'includesString',
+      },
+      {
+        id: 'estado',
+        accessorFn: (c) => {
+          const parts = [c.activo ? 'Activo' : 'Inactivo']
+          if (c.disponible) parts.push('Disponible')
+          return parts.join(' • ')
+        },
+        header: 'Estado',
+        filterFn: 'includesString',
+        cell: ({ row }) => (
+          <>
+            <StatusBadge activo={row.original.activo} />
+            {row.original.disponible ? ' • Disponible' : ''}
+          </>
+        ),
+      },
+      makeActionsColumn({ onEdit: openEdit, onDelete: handleDelete }),
+    ],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    []
+  )
 
   if (loading) {
     return (
@@ -141,63 +184,16 @@ const Conductor = () => {
         }
       />
 
-      <Card>
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-primary/10">
-                <th className="text-left py-3 px-4 font-heading text-primary font-semibold">Proyecto</th>
-                <th className="text-left py-3 px-4 font-heading text-primary font-semibold">Nombre</th>
-                <th className="text-left py-3 px-4 font-heading text-primary font-semibold">License number</th>
-                <th className="text-left py-3 px-4 font-heading text-primary font-semibold">Estado</th>
-                <th className="text-right py-3 px-4 font-heading text-primary font-semibold">Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              {conductores.length === 0 && (
-                <tr>
-                  <td colSpan={5} className="py-12 text-center text-muted">
-                    {selectedProyectoId ? 'No hay conductores en este proyecto' : 'No hay conductores'}
-                  </td>
-                </tr>
-              )}
-              {conductores.map((c) => (
-                <tr key={c.conductor_id} className="border-b border-primary/5 hover:bg-primary/5">
-                  <td className="py-3 px-4 text-muted">{c.proyecto_nombres?.length ? c.proyecto_nombres.join(', ') : '—'}</td>
-                  <td className="py-3 px-4">{c.nombre}</td>
-                  <td className="py-3 px-4 text-muted">{c.license_number || '—'}</td>
-                  <td className="py-3 px-4">
-                    <span
-                      className={`px-2 py-0.5 rounded text-xs ${
-                        c.activo ? 'bg-emerald-100 text-emerald-800' : 'bg-muted/30 text-muted'
-                      }`}
-                    >
-                      {c.activo ? 'Activo' : 'Inactivo'}
-                    </span>
-                    {c.disponible && ' • Disponible'}
-                  </td>
-                  <td className="py-3 px-4 text-right">
-                    <div className="flex justify-end gap-2">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        icon={<Pencil className="w-4 h-4" />}
-                        onClick={() => openEdit(c)}
-                      />
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        icon={<Trash2 className="w-4 h-4 text-red-600" />}
-                        onClick={() => handleDelete(c.conductor_id)}
-                      />
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </Card>
+      <DataTable
+        data={conductores}
+        columns={columns}
+        getRowId={(c) => c.conductor_id}
+        exportFileName="conductores"
+        exportTitle="Conductores"
+        emptyMessage={
+          selectedProyectoId ? 'No hay conductores en este proyecto' : 'No hay conductores'
+        }
+      />
 
       <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} title={editing ? 'Editar conductor' : 'Nuevo conductor'}>
         <form onSubmit={handleSubmit} className="space-y-4">

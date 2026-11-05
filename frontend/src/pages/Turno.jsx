@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react'
-import { Plus, Pencil, Trash2 } from 'lucide-react'
+import { useMemo, useState, useEffect } from 'react'
+import { Plus } from 'lucide-react'
 import PageHeader from '../components/layout/PageHeader'
 import Button from '../components/ui/Button'
-import Card from '../components/ui/Card'
 import Modal from '../components/ui/Modal'
+import DataTable, { StatusBadge, makeActionsColumn } from '../components/ui/DataTable'
 import Input from '../components/ui/Input'
 import Select from '../components/ui/Select'
 import Spinner from '../components/ui/Spinner'
@@ -162,15 +162,76 @@ const Turno = () => {
     }
   }
 
-  const handleDelete = async (id) => {
+  const handleDelete = async (t) => {
     if (!confirm('¿Eliminar este turno?')) return
     try {
-      await turnosService.delete(id)
+      await turnosService.delete(t.turno_id)
       loadData()
     } catch (err) {
       alert(getErrorMessage(err) || 'Error al eliminar')
     }
   }
+
+  const columns = useMemo(
+    () => [
+      {
+        id: 'proyecto',
+        accessorFn: (r) => proyectos.find((p) => p.proyecto_id === r.proyecto_id)?.nombre || '—',
+        header: 'Proyecto',
+        filterFn: 'includesString',
+      },
+      {
+        id: 'codigo',
+        accessorFn: (r) => r.codigo || '—',
+        header: 'Código',
+        filterFn: 'includesString',
+        cell: ({ getValue }) => <span className="text-muted">{getValue()}</span>,
+      },
+      {
+        accessorKey: 'nombre',
+        header: 'Nombre',
+        filterFn: 'includesString',
+      },
+      {
+        id: 'hora_entrada',
+        accessorFn: (r) => formatHoraCell(r.hora_entrada),
+        header: 'Entrada',
+        filterFn: 'includesString',
+        cell: ({ getValue }) => <span className="text-muted">{getValue()}</span>,
+      },
+      {
+        id: 'hora_salida',
+        accessorFn: (r) => formatHoraCell(r.hora_salida),
+        header: 'Salida',
+        filterFn: 'includesString',
+        cell: ({ getValue }) => <span className="text-muted">{getValue()}</span>,
+      },
+      {
+        id: 'tipo_turno',
+        accessorFn: (r) => tipoTurnoLabel(r.tipo_turno),
+        header: 'Tipo turno',
+        filterFn: 'includesString',
+        cell: ({ getValue }) => <span className="text-muted">{getValue()}</span>,
+      },
+      {
+        id: 'descripcion',
+        accessorFn: (r) => r.descripcion || '—',
+        header: 'Descripción',
+        filterFn: 'includesString',
+        cell: ({ getValue }) => <span className="text-muted">{getValue()}</span>,
+      },
+      {
+        id: 'estado',
+        accessorFn: (r) => (r.activo ? 'Activo' : 'Inactivo'),
+        header: 'Estado',
+        filterFn: 'includesString',
+        cell: ({ row }) => <StatusBadge activo={row.original.activo} />,
+      },
+      makeActionsColumn({ onEdit: openEdit, onDelete: handleDelete }),
+    ],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [proyectos]
+  )
 
   if (loading) {
     return (
@@ -188,56 +249,14 @@ const Turno = () => {
         children={<Button icon={<Plus className="w-5 h-5" />} onClick={openCreate}>Nuevo turno</Button>}
       />
 
-      <Card>
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-primary/10">
-                <th className="text-left py-3 px-4 font-heading text-primary font-semibold">Proyecto</th>
-                <th className="text-left py-3 px-4 font-heading text-primary font-semibold">Código</th>
-                <th className="text-left py-3 px-4 font-heading text-primary font-semibold">Nombre</th>
-                <th className="text-left py-3 px-4 font-heading text-primary font-semibold">Entrada</th>
-                <th className="text-left py-3 px-4 font-heading text-primary font-semibold">Salida</th>
-                <th className="text-left py-3 px-4 font-heading text-primary font-semibold">Tipo turno</th>
-                <th className="text-left py-3 px-4 font-heading text-primary font-semibold">Descripción</th>
-                <th className="text-left py-3 px-4 font-heading text-primary font-semibold">Estado</th>
-                <th className="text-right py-3 px-4 font-heading text-primary font-semibold">Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              {turnos.length === 0 && (
-                <tr>
-                  <td colSpan={9} className="py-12 text-center text-muted">
-                    {selectedProyectoId ? 'No hay turnos en este proyecto' : 'No hay turnos'}
-                  </td>
-                </tr>
-              )}
-              {turnos.map((t) => (
-                <tr key={t.turno_id} className="border-b border-primary/5 hover:bg-primary/5">
-                  <td className="py-3 px-4">{proyectos.find((p) => p.proyecto_id === t.proyecto_id)?.nombre || '-'}</td>
-                  <td className="py-3 px-4 text-muted">{t.codigo || '—'}</td>
-                  <td className="py-3 px-4">{t.nombre}</td>
-                  <td className="py-3 px-4 text-muted">{formatHoraCell(t.hora_entrada)}</td>
-                  <td className="py-3 px-4 text-muted">{formatHoraCell(t.hora_salida)}</td>
-                  <td className="py-3 px-4 text-muted">{tipoTurnoLabel(t.tipo_turno)}</td>
-                  <td className="py-3 px-4 text-muted">{t.descripcion || '—'}</td>
-                  <td className="py-3 px-4">
-                    <span className={`inline-block px-2 py-0.5 rounded text-xs ${t.activo ? 'bg-emerald-100 text-emerald-800' : 'bg-muted/30 text-muted'}`}>
-                      {t.activo ? 'Activo' : 'Inactivo'}
-                    </span>
-                  </td>
-                  <td className="py-3 px-4 text-right">
-                    <div className="flex justify-end gap-2">
-                      <Button variant="ghost" size="sm" icon={<Pencil className="w-4 h-4" />} onClick={() => openEdit(t)} />
-                      <Button variant="ghost" size="sm" icon={<Trash2 className="w-4 h-4 text-red-600" />} onClick={() => handleDelete(t.turno_id)} />
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </Card>
+      <DataTable
+        data={turnos}
+        columns={columns}
+        getRowId={(r) => r.turno_id}
+        exportFileName="turnos"
+        exportTitle="Turnos"
+        emptyMessage={selectedProyectoId ? 'No hay turnos en este proyecto' : 'No hay turnos'}
+      />
 
       <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} title={editing ? 'Editar turno' : 'Nuevo turno'}>
         <form onSubmit={handleSubmit} className="space-y-4">
