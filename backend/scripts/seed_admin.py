@@ -49,6 +49,7 @@ def seed():
             "proyecto", "turno", "tipo_pasajero", "tipo_vehiculo", "pasajero", "conductor", "vehiculo", "ruta", "horarios",
             "turnos_personal",
             "demanda_viajes",
+            "asignacion_manual_ruta",
         ]
         for v in ventanas:
             db.add(RolPermisoVentana(rol_id=rol_admin.rol_id, ventana=v))

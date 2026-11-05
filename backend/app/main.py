@@ -17,6 +17,7 @@ from app.api import (
     horarios,
     turnos_personal,
     demanda_viajes,
+    asignacion_manual_ruta,
 )
 from app.core.config import settings
 
@@ -50,6 +51,11 @@ app.include_router(pasajeros.router, prefix="/api/pasajeros", tags=["pasajeros"]
 app.include_router(horarios.router, prefix="/api/horarios", tags=["horarios"])
 app.include_router(turnos_personal.router, prefix="/api/turnos-personal", tags=["turnos-personal"])
 app.include_router(demanda_viajes.router, prefix="/api/demanda-viajes", tags=["demanda-viajes"])
+app.include_router(
+    asignacion_manual_ruta.router,
+    prefix="/api/asignacion-manual-ruta",
+    tags=["asignacion-manual-ruta"],
+)
 
 
 @app.get("/api/health")

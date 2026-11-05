@@ -18,6 +18,7 @@ import Vehiculo from './pages/Vehiculo'
 import Horarios from './pages/Horarios'
 import TurnosPersonal from './pages/TurnosPersonal'
 import DemandaViajes from './pages/DemandaViajes'
+import AsignacionManualRuta from './pages/AsignacionManualRuta'
 import Spinner from './components/ui/Spinner'
 
 const Ruta = lazy(() => import('./pages/Ruta'))
@@ -63,6 +64,7 @@ function App() {
             <Route path="horarios" element={<Horarios />} />
             <Route path="turnos-personal" element={<TurnosPersonal />} />
             <Route path="demanda-viajes" element={<DemandaViajes />} />
+            <Route path="asignacion-manual-ruta" element={<AsignacionManualRuta />} />
             <Route
               path="ruta"
               element={

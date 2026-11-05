@@ -74,6 +74,12 @@ const menuItems = [
     icon: Truck,
     children: [
       { path: '/demanda-viajes', icon: MapPinned, label: 'Demanda Viajes', ventana: 'demanda_viajes' },
+      {
+        path: '/asignacion-manual-ruta',
+        icon: Route,
+        label: 'Asignación manual de ruta',
+        ventana: 'asignacion_manual_ruta',
+      },
     ],
   },
 ]

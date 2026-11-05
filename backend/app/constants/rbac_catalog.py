@@ -30,5 +30,6 @@ VENTANAS_PERMITIDAS = frozenset(
         "horarios",
         "turnos_personal",
         "demanda_viajes",
+        "asignacion_manual_ruta",
     }
 )
